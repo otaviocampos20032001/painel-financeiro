@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Painel Financeiro — Otavio</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;display:flex;min-height:100vh;}
@@ -294,13 +295,13 @@ tbody tr:hover td{background:#f9fafb;}
   <div class="g2">
     <div class="card">
       <h3>Selecione o arquivo CSV</h3>
-      <input type="file" id="file-input" accept=".csv" style="display:none;" onchange="onFileSelected(this)">
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none;" onchange="onFileSelected(this)">
       <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()"
         ondragover="event.preventDefault();this.style.borderColor='#6366f1'" ondragleave="this.style.borderColor=''"
         ondrop="event.preventDefault();this.style.borderColor='';onFileSelected({files:event.dataTransfer.files})">
         <div class="upload-icon">📂</div>
-        <h4 id="upload-label">Clique ou arraste o arquivo CSV aqui</h4>
-        <p>Formatos aceitos: Nubank CSV, Bradesco CSV</p>
+        <h4 id="upload-label">Clique ou arraste o arquivo aqui</h4>
+        <p>Nubank: CSV &nbsp;|&nbsp; Bradesco: XLSX</p>
       </div>
       <div id="import-preview" style="display:none;margin-top:16px;">
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:13px;color:#065f46;" id="import-info"></div>
@@ -786,25 +787,32 @@ function onFileSelected(input){
   if(!file) return;
   csvArquivo = file;
   document.getElementById('upload-label').textContent = '📄 ' + file.name;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const texto = e.target.result;
-    const banco = detectarBanco(texto, file.name);
-    if(banco === 'nubank') csvLinhas = parsearNubank(texto);
-    else if(banco === 'bradesco') csvLinhas = parsearBradesco(texto);
-    else { toast('Formato não reconhecido. Selecione Nubank ou Bradesco.','erro'); return; }
-    document.getElementById('import-banco').value = banco;
-    mostrarPreview(banco, csvLinhas);
-  };
-  reader.readAsText(file, 'UTF-8');
-}
-
-function detectarBanco(texto, nome){
-  const t = texto.toLowerCase(); const n = nome.toLowerCase();
-  if(t.includes('nubank') || n.includes('nubank') || t.startsWith('date,title,amount')) return 'nubank';
-  if(t.includes('bradesco') || n.includes('bradesco') || t.includes('data;histórico') || t.includes('data;historico')) return 'bradesco';
-  const banco = document.getElementById('import-banco').value;
-  return banco !== 'auto' ? banco : null;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext === 'xlsx' || ext === 'xls'){
+    // Ler como Excel (Bradesco)
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        csvLinhas = parsearBradescoXLSX(rows);
+        document.getElementById('import-banco').value = 'bradesco';
+        mostrarPreview('bradesco', csvLinhas);
+      } catch(err){ toast('Erro ao ler arquivo Excel: ' + err.message, 'erro'); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // Ler como CSV (Nubank)
+    const reader = new FileReader();
+    reader.onload = e => {
+      const texto = e.target.result;
+      csvLinhas = parsearNubank(texto);
+      document.getElementById('import-banco').value = 'nubank';
+      mostrarPreview('nubank', csvLinhas);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
 }
 
 function parsearNubank(texto){
@@ -831,27 +839,29 @@ function parsearNubank(texto){
   return resultado;
 }
 
-function parsearBradesco(texto){
-  // Bradesco CSV: Data;Histórico;Docto.;Crédito (R$);Débito (R$);Saldo (R$)
-  const linhas = texto.trim().split('\n');
-  const sep = linhas[0].includes(';') ? ';' : ',';
+function parsearBradescoXLSX(rows){
+  // Formato: Data do Lançamento | Descrição | Documento | Tipo | Valor R$ | Saldo R$
+  // Tipo: "Crédito" ou "Débito"
   const resultado = [];
-  let headerFound = false;
-  for(let i = 0; i < linhas.length; i++){
-    const l = linhas[i].toLowerCase();
-    if(l.includes('data') && (l.includes('hist') || l.includes('crédito') || l.includes('credito'))){
-      headerFound = true; continue;
+  let headerIdx = -1;
+  for(let i = 0; i < rows.length; i++){
+    const row = rows[i].map(c => String(c).toLowerCase());
+    if(row.some(c => c.includes('data do lan')) || (row.some(c=>c.includes('data')) && row.some(c=>c.includes('tipo')))){
+      headerIdx = i; break;
     }
-    if(!headerFound) continue;
-    const cols = linhas[i].split(sep).map(c => c.trim().replace(/^"|"$/g,''));
-    if(cols.length < 4) continue;
-    const [data, desc, , credRaw, debRaw] = cols;
-    if(!data || !desc) continue;
-    const cred = parseFloat((credRaw||'0').replace(/\./g,'').replace(',','.')) || 0;
-    const deb  = parseFloat((debRaw||'0').replace(/\./g,'').replace(',','.')) || 0;
-    if(cred === 0 && deb === 0) continue;
-    const tipo = cred > 0 ? 'entrada' : 'saida';
-    const valor = cred > 0 ? cred : deb;
+  }
+  if(headerIdx === -1) return [];
+  for(let i = headerIdx + 1; i < rows.length; i++){
+    const cols = rows[i];
+    if(!cols || cols.length < 5) continue;
+    const data  = String(cols[0]||'').trim();
+    const desc  = String(cols[1]||'').trim();
+    const tipo_raw = String(cols[3]||'').trim().toLowerCase();
+    const valorRaw = String(cols[4]||'').trim();
+    if(!data || !desc || !valorRaw) continue;
+    const valor = Math.abs(parseFloat(valorRaw.replace(/\./g,'').replace(',','.'))) || 0;
+    if(valor === 0) continue;
+    const tipo = tipo_raw.includes('déb') || tipo_raw.includes('deb') ? 'saida' : 'entrada';
     const dataFmt = formatarData(data);
     const mes = extrairMes(data);
     resultado.push({tipo, desc, valor, data: dataFmt, mes, cat: sugerirCategoria(desc), origem:'Bradesco'});
