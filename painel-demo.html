@@ -3,12 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Painel Financeiro — Otavio</title>
+<title>Painel Financeiro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f9fafb;display:flex;min-height:100vh;}
+
+/* ── Primeiro Acesso ── */
+#setup-overlay{position:fixed;inset:0;background:rgba(17,24,39,.85);z-index:300;display:flex;align-items:center;justify-content:center;}
+.setup-box{background:#fff;border-radius:20px;width:100%;max-width:440px;padding:36px;box-shadow:0 24px 64px rgba(0,0,0,.25);margin:16px;}
+.setup-logo{width:48px;height:48px;background:#4f46e5;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#fff;margin:0 auto 20px;}
+.setup-box h2{font-size:20px;font-weight:700;color:#111827;text-align:center;margin-bottom:6px;}
+.setup-box p{font-size:13px;color:#6b7280;text-align:center;margin-bottom:24px;}
 
 /* ── Sidebar ── */
 aside{width:240px;min-height:100vh;background:#111827;color:#fff;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
@@ -148,17 +155,30 @@ tbody tr:hover td{background:#f9fafb;}
 
 /* ── Misc ── */
 .empty{text-align:center;padding:40px;color:#9ca3af;font-size:13px;}
-.demo-footer{text-align:center;font-size:11px;color:#d1d5db;padding:8px 0 4px;}
 .mb16{margin-bottom:16px;}
 </style>
 </head>
 <body>
 
+<!-- ═══════ PRIMEIRO ACESSO ═══════ -->
+<div id="setup-overlay" style="display:none;">
+  <div class="setup-box">
+    <div class="setup-logo">$</div>
+    <h2>Bem-vindo ao seu Painel Financeiro</h2>
+    <p>Configure seu painel em menos de 1 minuto.</p>
+    <div class="fg"><label class="fl">Seu nome completo</label><input type="text" id="setup-nome" class="fi" placeholder="Ex: Otavio Campos"/></div>
+    <div class="fg"><label class="fl">E-mail</label><input type="email" id="setup-email" class="fi" placeholder="seu@email.com"/></div>
+    <div class="fg"><label class="fl">Nome do painel</label><input type="text" id="setup-titulo" class="fi" placeholder="Ex: Meu Painel Financeiro"/></div>
+    <div class="fg"><label class="fl">Subtítulo</label><input type="text" id="setup-subtitulo" class="fi" placeholder="Ex: Controle de Caixa"/></div>
+    <button class="btn bp" style="width:100%;justify-content:center;padding:12px;" onclick="concluirSetup()">Começar →</button>
+  </div>
+</div>
+
 <!-- ═══════ SIDEBAR ═══════ -->
 <aside>
   <div class="sb-header">
     <div class="sb-logo">$</div>
-    <div><div class="sb-title">Painel Financeiro</div><div class="sb-sub">Fechamento de Caixa</div></div>
+    <div><div class="sb-title" id="sb-titulo">Painel Financeiro</div><div class="sb-sub" id="sb-subtitulo">Controle de Caixa</div></div>
   </div>
   <nav>
     <div class="nl active" onclick="irPara('dashboard',this)">
@@ -170,21 +190,18 @@ tbody tr:hover td{background:#f9fafb;}
     <div class="nl" onclick="irPara('importar',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1M12 12V4m0 8-3-3m3 3 3-3"/></svg>Importar
     </div>
-    <div class="nl" onclick="irPara('pendentes',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pendentes
+    <div class="nl" onclick="irPara('categorias',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg>Categorias
     </div>
     <div class="nl" onclick="irPara('fechamentos',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fechamentos
-    </div>
-    <div class="nl" onclick="irPara('categorias',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg>Categorias
     </div>
     <div class="nl" onclick="irPara('configuracoes',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Configurações
     </div>
   </nav>
   <div class="sb-footer">
-    <button class="btn-sair" onclick="toast('Sessão encerrada. Até logo!','sucesso')">
+    <button class="btn-sair" onclick="toast('Até logo!','sucesso')">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
     </button>
   </div>
@@ -196,33 +213,18 @@ tbody tr:hover td{background:#f9fafb;}
 <!-- ── DASHBOARD ── -->
 <div class="page active" id="page-dashboard">
   <div class="ph">
-    <div><h2>Dashboard</h2><p id="mes-label">Abril 2026</p></div>
-    <select id="mes-select" onchange="trocarMes(this.value)">
-      <option value="2026-12">Dezembro 2026</option>
-      <option value="2026-11">Novembro 2026</option>
-      <option value="2026-10">Outubro 2026</option>
-      <option value="2026-09">Setembro 2026</option>
-      <option value="2026-08">Agosto 2026</option>
-      <option value="2026-07">Julho 2026</option>
-      <option value="2026-06">Junho 2026</option>
-      <option value="2026-05">Maio 2026</option>
-      <option value="2026-04" selected>Abril 2026</option>
-      <option value="2026-03">Março 2026</option>
-      <option value="2026-02">Fevereiro 2026</option>
-      <option value="2026-01">Janeiro 2026</option>
-      <option value="2025-12">Dezembro 2025</option>
-      <option value="2025-11">Novembro 2025</option>
-    </select>
+    <div><h2>Dashboard</h2><p id="mes-label">—</p></div>
+    <select id="mes-select" onchange="trocarMes(this.value)"></select>
   </div>
   <div class="kpi-grid">
-    <div class="kpi verde"><div class="kl">Total de Entradas</div><div class="kv" id="kpi-e">—</div><div class="kvar" id="kpi-ev"></div></div>
-    <div class="kpi vermelho"><div class="kl">Total de Saídas</div><div class="kv" id="kpi-s">—</div><div class="kvar" id="kpi-sv"></div></div>
-    <div class="kpi azul"><div class="kl">Resultado Líquido</div><div class="kv" id="kpi-r">—</div></div>
-    <div class="kpi verde"><div class="kl">Margem de Resultado</div><div class="kv" id="kpi-m">—</div></div>
+    <div class="kpi verde"><div class="kl">Total de Entradas</div><div class="kv" id="kpi-e">R$ 0,00</div><div class="kvar" id="kpi-ev"></div></div>
+    <div class="kpi vermelho"><div class="kl">Total de Saídas</div><div class="kv" id="kpi-s">R$ 0,00</div><div class="kvar" id="kpi-sv"></div></div>
+    <div class="kpi azul"><div class="kl">Resultado Líquido</div><div class="kv" id="kpi-r">R$ 0,00</div></div>
+    <div class="kpi verde"><div class="kl">Margem de Resultado</div><div class="kv" id="kpi-m">0%</div></div>
   </div>
   <div class="prog-card">
     <div class="prog-hdr"><span>Saídas vs Entradas</span><span id="prog-pct">—</span></div>
-    <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%;background:#10b981;"></div></div>
     <div class="prog-scale"><span>R$ 0,00</span><span id="prog-max">—</span></div>
   </div>
   <div class="g3">
@@ -235,7 +237,7 @@ tbody tr:hover td{background:#f9fafb;}
     <div class="card"><h3>Entradas por Categoria</h3>
       <div class="pz-wrap"><div class="pz-canvas"><canvas id="chart-pe"></canvas></div><div id="leg-e"></div></div>
     </div>
-    <div class="card"><h3>Últimos Lançamentos</h3><div id="dash-lanc"></div></div>
+    <div class="card"><h3>Últimos Lançamentos</h3><div id="dash-lanc"><div class="empty">Nenhum lançamento ainda.<br>Vá em Importar para começar.</div></div></div>
   </div>
 </div>
 
@@ -252,56 +254,29 @@ tbody tr:hover td{background:#f9fafb;}
       <option value="entrada">Entradas</option>
       <option value="saida">Saídas</option>
     </select>
-    <select id="f-cat" onchange="filtrarLanc()">
-      <option value="">Todas as categorias</option>
-      <option>Mensalidade Presencial</option>
-      <option>Pagamento de Consultoria</option>
-      <option>Outros (entrada)</option>
-      <option>Custo de Equipe</option>
-      <option>Imposto</option>
-      <option>Cursos e Mentorias</option>
-      <option>Equipamento Audiovisual</option>
-      <option>Ferramentas Digitais</option>
-      <option>Anúncios</option>
-    </select>
-    <select id="f-mes" onchange="filtrarLanc()">
-      <option value="2026-12">Dezembro 2026</option>
-      <option value="2026-11">Novembro 2026</option>
-      <option value="2026-10">Outubro 2026</option>
-      <option value="2026-09">Setembro 2026</option>
-      <option value="2026-08">Agosto 2026</option>
-      <option value="2026-07">Julho 2026</option>
-      <option value="2026-06">Junho 2026</option>
-      <option value="2026-05">Maio 2026</option>
-      <option value="2026-04" selected>Abril 2026</option>
-      <option value="2026-03">Março 2026</option>
-      <option value="2026-02">Fevereiro 2026</option>
-      <option value="2026-01">Janeiro 2026</option>
-      <option value="2025-12">Dezembro 2025</option>
-      <option value="2025-11">Novembro 2025</option>
-    </select>
+    <select id="f-cat" onchange="filtrarLanc()"><option value="">Todas as categorias</option></select>
+    <select id="f-mes" onchange="filtrarLanc()"></select>
   </div>
   <div class="card">
     <div class="tw"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Ações</th></tr></thead>
       <tbody id="tbody-lanc"></tbody>
     </table></div>
   </div>
-  <div class="demo-footer" style="margin-top:16px;">⚠ Dados fictícios — apenas para demonstração visual</div>
 </div>
 
 <!-- ── IMPORTAR ── -->
 <div class="page" id="page-importar">
-  <div class="ph"><div><h2>Importar Extrato</h2><p>Importe extratos CSV do Nubank ou Bradesco</p></div></div>
+  <div class="ph"><div><h2>Importar Extrato</h2><p>Nubank (CSV) ou Bradesco (XLSX)</p></div></div>
   <div class="g2">
     <div class="card">
-      <h3>Selecione o arquivo CSV</h3>
+      <h3>Selecione o arquivo</h3>
       <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none;" onchange="onFileSelected(this)">
-      <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()"
+      <div class="upload-area" onclick="document.getElementById('file-input').click()"
         ondragover="event.preventDefault();this.style.borderColor='#6366f1'" ondragleave="this.style.borderColor=''"
         ondrop="event.preventDefault();this.style.borderColor='';onFileSelected({files:event.dataTransfer.files})">
         <div class="upload-icon">📂</div>
         <h4 id="upload-label">Clique ou arraste o arquivo aqui</h4>
-        <p>Nubank: CSV &nbsp;|&nbsp; Bradesco: XLSX</p>
+        <p>Nubank: .csv &nbsp;|&nbsp; Bradesco: .xlsx</p>
       </div>
       <div id="import-preview" style="display:none;margin-top:16px;">
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:13px;color:#065f46;" id="import-info"></div>
@@ -315,7 +290,7 @@ tbody tr:hover td{background:#f9fafb;}
       </div>
       <div style="margin-top:16px;display:flex;gap:10px;">
         <select id="import-banco" style="flex:1;">
-          <option value="auto">Detectar banco automaticamente</option>
+          <option value="auto">Detectar automaticamente</option>
           <option value="nubank">Nubank</option>
           <option value="bradesco">Bradesco</option>
         </select>
@@ -332,40 +307,6 @@ tbody tr:hover td{background:#f9fafb;}
   </div>
 </div>
 
-<!-- ── PENDENTES ── -->
-<div class="page" id="page-pendentes">
-  <div class="ph">
-    <div><h2>Pendentes</h2><p>Lançamentos aguardando categorização ou confirmação</p></div>
-    <button class="btn bs" onclick="resolverTodos()">Resolver todos</button>
-  </div>
-  <div class="card">
-    <div class="tw"><table>
-      <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Origem</th><th>Situação</th><th>Ações</th></tr></thead>
-      <tbody id="tbody-pend">
-        <tr><td colspan="6" class="empty">Nenhum lançamento pendente</td></tr>
-      </tbody>
-    </table></div>
-  </div>
-  <div class="demo-footer" style="margin-top:16px;">⚠ Dados fictícios — apenas para demonstração visual</div>
-</div>
-
-<!-- ── FECHAMENTOS ── -->
-<div class="page" id="page-fechamentos">
-  <div class="ph">
-    <div><h2>Fechamentos</h2><p>Resumo mensal de caixa</p></div>
-    <button class="btn bp" onclick="abrirModalFechamento()">+ Novo Fechamento</button>
-  </div>
-  <div class="card">
-    <div class="tw"><table>
-      <thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Resultado</th><th>Margem</th><th>Status</th><th>Ações</th></tr></thead>
-      <tbody>
-        <tr><td colspan="7" class="empty">Nenhum fechamento registrado</td></tr>
-      </tbody>
-    </table></div>
-  </div>
-  <div class="demo-footer" style="margin-top:16px;">⚠ Dados fictícios — apenas para demonstração visual</div>
-</div>
-
 <!-- ── CATEGORIAS ── -->
 <div class="page" id="page-categorias">
   <div class="ph">
@@ -376,74 +317,64 @@ tbody tr:hover td{background:#f9fafb;}
     <div class="card">
       <h3>Categorias de Entrada</h3>
       <div class="tw"><table>
-        <thead><tr><th>Cor</th><th>Nome</th><th>Lançamentos</th><th>Total (Abr)</th><th></th></tr></thead>
-        <tbody id="tbody-cat-e">
-          <tr><td><span class="cc" style="background:#10b981;"></span></td><td>Mensalidade Presencial</td><td>14</td><td class="ve">R$ 42.000,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Mensalidade Presencial','#10b981','entrada')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#6366f1;"></span></td><td>Pagamento de Consultoria</td><td>5</td><td class="ve">R$ 16.800,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Pagamento de Consultoria','#6366f1','entrada')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#94a3b8;"></span></td><td>Outros</td><td>2</td><td class="ve">R$ 2.300,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Outros','#94a3b8','entrada')">Editar</button></td></tr>
-        </tbody>
+        <thead><tr><th>Cor</th><th>Nome</th><th></th></tr></thead>
+        <tbody id="tbody-cat-e"></tbody>
       </table></div>
     </div>
     <div class="card">
       <h3>Categorias de Saída</h3>
       <div class="tw"><table>
-        <thead><tr><th>Cor</th><th>Nome</th><th>Lançamentos</th><th>Total (Abr)</th><th></th></tr></thead>
-        <tbody id="tbody-cat-s">
-          <tr><td><span class="cc" style="background:#6366f1;"></span></td><td>Custo de Equipe</td><td>8</td><td class="vs">R$ 18.500,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Custo de Equipe','#6366f1','saida')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#ef4444;"></span></td><td>Imposto</td><td>4</td><td class="vs">R$ 9.200,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Imposto','#ef4444','saida')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#f59e0b;"></span></td><td>Cursos e Mentorias</td><td>3</td><td class="vs">R$ 5.800,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Cursos e Mentorias','#f59e0b','saida')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#8b5cf6;"></span></td><td>Equipamento Audiovisual</td><td>2</td><td class="vs">R$ 4.100,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Equipamento Audiovisual','#8b5cf6','saida')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#3b82f6;"></span></td><td>Ferramentas Digitais</td><td>7</td><td class="vs">R$ 2.900,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Ferramentas Digitais','#3b82f6','saida')">Editar</button></td></tr>
-          <tr><td><span class="cc" style="background:#10b981;"></span></td><td>Anúncios</td><td>6</td><td class="vs">R$ 500,00</td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('Anúncios','#10b981','saida')">Editar</button></td></tr>
-        </tbody>
+        <thead><tr><th>Cor</th><th>Nome</th><th></th></tr></thead>
+        <tbody id="tbody-cat-s"></tbody>
       </table></div>
     </div>
   </div>
-  <div class="demo-footer" style="margin-top:16px;">⚠ Dados fictícios — apenas para demonstração visual</div>
+</div>
+
+<!-- ── FECHAMENTOS ── -->
+<div class="page" id="page-fechamentos">
+  <div class="ph">
+    <div><h2>Fechamentos</h2><p>Resumo mensal de caixa</p></div>
+  </div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Resultado</th><th>Margem</th><th>Ações</th></tr></thead>
+      <tbody id="tbody-fechamentos"></tbody>
+    </table></div>
+  </div>
 </div>
 
 <!-- ── CONFIGURAÇÕES ── -->
 <div class="page" id="page-configuracoes">
   <div class="ph">
-    <div><h2>Configurações</h2><p>Preferências do painel</p></div>
+    <div><h2>Configurações</h2><p>Suas preferências</p></div>
     <button class="btn bp" onclick="salvarConfig()">Salvar alterações</button>
   </div>
   <div style="max-width:640px;">
     <div class="card mb16">
       <div class="fs">
-        <div class="fst">Acesso</div>
-        <div class="fg"><label class="fl">E-mail de acesso</label><input type="email" class="fi" value="leadleveracademy@gmail.com"/></div>
-        <div class="fr">
-          <div class="fg"><label class="fl">Nova senha</label><input type="password" class="fi" placeholder="••••••••"/></div>
-          <div class="fg"><label class="fl">Confirmar senha</label><input type="password" class="fi" placeholder="••••••••"/></div>
-        </div>
+        <div class="fst">Identificação</div>
+        <div class="fg"><label class="fl">Seu nome completo</label><input type="text" id="cfg-nome" class="fi"/></div>
+        <div class="fg"><label class="fl">E-mail</label><input type="email" id="cfg-email" class="fi"/></div>
       </div>
       <div class="fs">
-        <div class="fst">Empresa</div>
-        <div class="fg"><label class="fl">Nome do painel</label><input type="text" class="fi" value="Painel Financeiro"/></div>
-        <div class="fg"><label class="fl">Subtítulo</label><input type="text" class="fi" value="Fechamento de Caixa Mensal"/></div>
-      </div>
-      <div class="fs">
-        <div class="fst">Notificações</div>
-        <div class="fg"><label class="fl">E-mail para alertas</label><input type="email" class="fi" value="leadleveracademy@gmail.com"/></div>
-        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#374151;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" checked/> Alertar quando saídas ultrapassarem 80% das entradas</label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" checked/> Lembrete de fechamento mensal</label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox"/> Relatório semanal por e-mail</label>
-        </div>
+        <div class="fst">Painel</div>
+        <div class="fg"><label class="fl">Nome do painel</label><input type="text" id="cfg-titulo" class="fi"/></div>
+        <div class="fg"><label class="fl">Subtítulo</label><input type="text" id="cfg-subtitulo" class="fi"/></div>
       </div>
       <div>
         <div class="fst">Contas bancárias</div>
-        <div class="tw" style="margin-top:12px;"><table>
-          <thead><tr><th>Banco</th><th>Tipo</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            <tr><td>Nubank</td><td>Conta Corrente</td><td><span class="badge verde">✓ Ativa</span></td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarConta('Nubank','Conta Corrente')">Editar</button></td></tr>
-            <tr><td>Itaú</td><td>Conta Corrente</td><td><span class="badge verde">✓ Ativa</span></td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarConta('Itaú','Conta Corrente')">Editar</button></td></tr>
-            <tr><td>Amex</td><td>Cartão de Crédito</td><td><span class="badge verde">✓ Ativa</span></td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarConta('Amex','Cartão de Crédito')">Editar</button></td></tr>
-            <tr><td>Elo</td><td>Cartão de Crédito</td><td><span class="badge amarelo">Pausada</span></td><td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarConta('Elo','Cartão de Crédito')">Editar</button></td></tr>
-          </tbody>
+        <div style="margin:12px 0;"><button class="btn bp" onclick="abrirModalNovaConta()">+ Nova Conta</button></div>
+        <div class="tw"><table>
+          <thead><tr><th>Banco</th><th>Tipo</th><th></th></tr></thead>
+          <tbody id="tbody-contas"></tbody>
         </table></div>
       </div>
+    </div>
+    <div class="card" style="border-left:4px solid #ef4444;background:#fef2f2;">
+      <div class="fst" style="color:#991b1b;">Zona de perigo</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">Apaga todos os lançamentos e configurações.</p>
+      <button class="btn bd" onclick="resetarTudo()">Resetar tudo</button>
     </div>
   </div>
 </div>
@@ -462,131 +393,265 @@ tbody tr:hover td{background:#f9fafb;}
   </div>
 </div>
 
-<!-- ═══════ TOAST ═══════ -->
 <div id="toast"></div>
 
 <script>
 // ══════════════════════════════════════════════
-// DADOS
-// ══════════════════════════════════════════════
-const CAT_SAIDA  = [{n:'Custo de Equipe',c:'#6366f1'},{n:'Imposto',c:'#ef4444'},{n:'Cursos e Mentorias',c:'#f59e0b'},{n:'Equipamento Audiovisual',c:'#8b5cf6'},{n:'Ferramentas Digitais',c:'#3b82f6'},{n:'Anúncios',c:'#10b981'}];
-const CAT_ENTRADA= [{n:'Mensalidade Presencial',c:'#10b981'},{n:'Pagamento de Consultoria',c:'#6366f1'},{n:'Outros',c:'#94a3b8'}];
-
-const DADOS = {
-  '2026-04':{e:0,s:0,
-    cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],
-    ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-03':{e:0,s:0,
-    cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],
-    ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-02':{e:0,s:0,
-    cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],
-    ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-01':{e:0,s:0,
-    cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],
-    ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2025-12':{e:0,s:0,
-    cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],
-    ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2025-11':{e:0,s:0,
-    cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],
-    ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-05':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-06':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-07':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-08':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-09':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-10':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-11':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-  '2026-12':{e:0,s:0,cs:[{n:'Custo de Equipe',v:0,c:'#6366f1'},{n:'Imposto',v:0,c:'#ef4444'},{n:'Cursos e Mentorias',v:0,c:'#f59e0b'},{n:'Equipamento Audiovisual',v:0,c:'#8b5cf6'},{n:'Ferramentas Digitais',v:0,c:'#3b82f6'},{n:'Anúncios',v:0,c:'#10b981'}],ce:[{n:'Mensalidade Presencial',v:0,c:'#10b981'},{n:'Pagamento de Consultoria',v:0,c:'#6366f1'},{n:'Outros',v:0,c:'#94a3b8'}]},
-};
-
-const HIST=[{l:'Nov/25',e:0,s:0},{l:'Dez/25',e:0,s:0},{l:'Jan/26',e:0,s:0},{l:'Fev/26',e:0,s:0},{l:'Mar/26',e:0,s:0},{l:'Abr/26',e:0,s:0}];
-const MNOME={'2026-12':'Dezembro 2026','2026-11':'Novembro 2026','2026-10':'Outubro 2026','2026-09':'Setembro 2026','2026-08':'Agosto 2026','2026-07':'Julho 2026','2026-06':'Junho 2026','2026-05':'Maio 2026','2026-04':'Abril 2026','2026-03':'Março 2026','2026-02':'Fevereiro 2026','2026-01':'Janeiro 2026','2025-12':'Dezembro 2025','2025-11':'Novembro 2025'};
-const MANT={'2026-12':'2026-11','2026-11':'2026-10','2026-10':'2026-09','2026-09':'2026-08','2026-08':'2026-07','2026-07':'2026-06','2026-06':'2026-05','2026-05':'2026-04','2026-04':'2026-03','2026-03':'2026-02','2026-02':'2026-01','2026-01':'2025-12','2025-12':'2025-11','2025-11':null};
-
-// ══════════════════════════════════════════════
-// PERSISTÊNCIA — localStorage
+// PERSISTÊNCIA
 // ══════════════════════════════════════════════
 function salvarDados(){
-  localStorage.setItem('painel_lancs', JSON.stringify(LANCS));
-  localStorage.setItem('painel_nextid', nextId);
+  localStorage.setItem('pf_lancs', JSON.stringify(LANCS));
+  localStorage.setItem('pf_nextid', nextId);
+  localStorage.setItem('pf_cats', JSON.stringify(CATS));
+  localStorage.setItem('pf_contas', JSON.stringify(CONTAS));
+  localStorage.setItem('pf_import_hist', JSON.stringify(IMPORT_HIST));
 }
 function carregarDados(){
-  const l = localStorage.getItem('painel_lancs');
-  const n = localStorage.getItem('painel_nextid');
-  if(l) LANCS = JSON.parse(l);
-  if(n) nextId = parseInt(n);
+  try {
+    const l = localStorage.getItem('pf_lancs');
+    const n = localStorage.getItem('pf_nextid');
+    const c = localStorage.getItem('pf_cats');
+    const ct = localStorage.getItem('pf_contas');
+    const ih = localStorage.getItem('pf_import_hist');
+    if(l) LANCS = JSON.parse(l);
+    if(n) nextId = parseInt(n);
+    if(c) CATS = JSON.parse(c);
+    if(ct) CONTAS = JSON.parse(ct);
+    if(ih) IMPORT_HIST = JSON.parse(ih);
+  } catch(e){}
+}
+function carregarConfig(){
+  try {
+    const cfg = JSON.parse(localStorage.getItem('pf_config')||'{}');
+    return cfg;
+  } catch(e){ return {}; }
+}
+function salvarConfigStorage(cfg){
+  localStorage.setItem('pf_config', JSON.stringify(cfg));
 }
 
+// ══════════════════════════════════════════════
+// DADOS
+// ══════════════════════════════════════════════
 let LANCS = [];
 let nextId = 1;
+let IMPORT_HIST = [];
+let CATS = {
+  entrada: [
+    {n:'Receita / Entrada', c:'#10b981'},
+    {n:'Transferência Recebida', c:'#6366f1'},
+    {n:'Consultoria', c:'#3b82f6'},
+    {n:'Outros (entrada)', c:'#94a3b8'}
+  ],
+  saida: [
+    {n:'Alimentação', c:'#ef4444'},
+    {n:'Transporte', c:'#f59e0b'},
+    {n:'Saúde / Farmácia', c:'#8b5cf6'},
+    {n:'Impostos', c:'#dc2626'},
+    {n:'Ferramentas / Serviços', c:'#3b82f6'},
+    {n:'Lazer', c:'#10b981'},
+    {n:'Outros (saída)', c:'#94a3b8'}
+  ]
+};
+let CONTAS = [];
+
 carregarDados();
 
-const fmt=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
+const fmt = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
+
+// ══════════════════════════════════════════════
+// MESES DISPONÍVEIS
+// ══════════════════════════════════════════════
+function mesesDisponiveis(){
+  const set = new Set(LANCS.map(l => l.mes));
+  if(set.size === 0){
+    const hoje = new Date();
+    set.add(`${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`);
+  }
+  return Array.from(set).sort((a,b) => b.localeCompare(a));
+}
+function nomeMes(m){
+  if(!m) return '—';
+  const [y,mo] = m.split('-');
+  const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return `${nomes[parseInt(mo)-1]} ${y}`;
+}
+function popularSelects(){
+  const meses = mesesDisponiveis();
+  ['mes-select','f-mes'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const val = el.value;
+    el.innerHTML = meses.map(m => `<option value="${m}">${nomeMes(m)}</option>`).join('');
+    if(meses.includes(val)) el.value = val;
+  });
+  // categorias no filtro
+  const fc = document.getElementById('f-cat');
+  if(fc){
+    const todas = [...CATS.entrada, ...CATS.saida].map(c=>c.n);
+    fc.innerHTML = '<option value="">Todas as categorias</option>' + todas.map(n=>`<option>${n}</option>`).join('');
+  }
+}
 
 // ══════════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════════
 let toastTimer;
-function toast(msg,tipo=''){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.className='show '+(tipo||'');
+function toast(msg, tipo=''){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show '+(tipo||'');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.className='',2800);
+  toastTimer = setTimeout(()=>el.className='', 2800);
 }
 
 // ══════════════════════════════════════════════
 // MODAL
 // ══════════════════════════════════════════════
-function abrirModal(titulo,corpo,rodape){
-  document.getElementById('modal-title').textContent=titulo;
-  document.getElementById('modal-body').innerHTML=corpo;
-  document.getElementById('modal-footer').innerHTML=rodape||'';
+function abrirModal(titulo, corpo, rodape){
+  document.getElementById('modal-title').textContent = titulo;
+  document.getElementById('modal-body').innerHTML = corpo;
+  document.getElementById('modal-footer').innerHTML = rodape||'';
   document.getElementById('modal-bg').classList.add('open');
 }
 function fecharModal(e){
-  if(e&&e.target!==document.getElementById('modal-bg'))return;
+  if(e && e.target !== document.getElementById('modal-bg')) return;
   document.getElementById('modal-bg').classList.remove('open');
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('modal-bg').classList.remove('open');});
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.getElementById('modal-bg').classList.remove('open'); });
 
 // ══════════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════════
-function irPara(p,el){
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.nl').forEach(x=>x.classList.remove('active'));
+function irPara(p, el){
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nl').forEach(x => x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   el.classList.add('active');
-  if(p==='dashboard'&&!chartBarras)initCharts();
+  if(p==='dashboard') atualizarDashboard();
+  if(p==='configuracoes') carregarFormConfig();
+  if(p==='categorias') renderCategorias();
+  if(p==='fechamentos') renderFechamentos();
 }
 
 // ══════════════════════════════════════════════
-// DASHBOARD
+// DASHBOARD — CALCULADO DOS LANÇAMENTOS
 // ══════════════════════════════════════════════
-let chartBarras,chartPS,chartPE;
+let chartBarras, chartPS, chartPE;
+let mesSelecionado = '';
 
-function initCharts(){
-  chartBarras=new Chart(document.getElementById('chart-barras').getContext('2d'),{
+function atualizarDashboard(){
+  popularSelects();
+  const meses = mesesDisponiveis();
+  if(!mesSelecionado || !meses.includes(mesSelecionado)) mesSelecionado = meses[0];
+  document.getElementById('mes-select').value = mesSelecionado;
+  renderKPIs(mesSelecionado);
+  renderCharts(mesSelecionado);
+  renderDashLanc(mesSelecionado);
+}
+
+function trocarMes(mes){
+  mesSelecionado = mes;
+  renderKPIs(mes);
+  renderCharts(mes);
+  renderDashLanc(mes);
+}
+
+function calcMes(mes){
+  const lancs = LANCS.filter(l => l.mes === mes);
+  const e = lancs.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0);
+  const s = lancs.filter(l=>l.tipo==='saida').reduce((s,l)=>s+l.valor,0);
+  // por categoria
+  const agrupCat = (tipo) => {
+    const cats = CATS[tipo];
+    return cats.map(cat => {
+      const v = lancs.filter(l=>l.tipo===tipo&&l.cat===cat.n).reduce((s,l)=>s+l.valor,0);
+      return {n:cat.n, c:cat.c, v};
+    }).filter(x=>x.v>0);
+  };
+  return {e, s, cs: agrupCat('saida'), ce: agrupCat('entrada')};
+}
+
+function mesAnterior(mes){
+  const [y,m] = mes.split('-').map(Number);
+  const d = new Date(y, m-2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function renderKPIs(mes){
+  document.getElementById('mes-label').textContent = nomeMes(mes);
+  const d = calcMes(mes);
+  const ant = calcMes(mesAnterior(mes));
+  const res = d.e - d.s;
+  const mrg = d.e > 0 ? (res/d.e)*100 : 0;
+  const pct = d.e > 0 ? (d.s/d.e)*100 : 0;
+
+  document.getElementById('kpi-e').textContent = fmt(d.e);
+  document.getElementById('kpi-s').textContent = fmt(d.s);
+  document.getElementById('kpi-r').textContent = fmt(res);
+  document.getElementById('kpi-m').textContent = mrg.toFixed(1)+'%';
+
+  const vE = ant.e > 0 ? ((d.e-ant.e)/ant.e*100) : null;
+  const vS = ant.s > 0 ? ((d.s-ant.s)/ant.s*100) : null;
+  const eE = document.getElementById('kpi-ev');
+  const eS = document.getElementById('kpi-sv');
+  eE.textContent = vE!=null ? `${vE>0?'↑':'↓'} ${vE>0?'+':''}${vE.toFixed(1)}% vs mês anterior` : '';
+  eE.className = 'kvar '+(vE>=0?'up':'dn');
+  eS.textContent = vS!=null ? `${vS>0?'↑':'↓'} ${vS>0?'+':''}${vS.toFixed(1)}% vs mês anterior` : '';
+  eS.className = 'kvar '+(vS>=0?'up':'dn');
+
+  document.getElementById('kpi-m').closest('.kpi').className = 'kpi '+(mrg>=20?'verde':mrg>=0?'amarelo':'vermelho');
+  document.getElementById('kpi-r').closest('.kpi').className = 'kpi '+(res>=0?'azul':'vermelho');
+
+  const f = document.getElementById('prog-fill');
+  f.style.width = Math.min(pct,100)+'%';
+  f.style.background = pct>90?'#ef4444':pct>70?'#f59e0b':'#10b981';
+  document.getElementById('prog-pct').textContent = d.e>0 ? pct.toFixed(1)+'% das entradas comprometidas' : '—';
+  document.getElementById('prog-max').textContent = fmt(d.e);
+}
+
+function renderCharts(mes){
+  // Últimos 6 meses
+  const meses = mesesDisponiveis();
+  const idxAtual = meses.indexOf(mes);
+  const ultimos6 = [];
+  for(let i=5;i>=0;i--){
+    const idx = idxAtual+i;
+    const m = meses[idx] || null;
+    if(m){ const d=calcMes(m); ultimos6.push({l:nomeMes(m).slice(0,6),e:d.e,s:d.s}); }
+  }
+
+  const d = calcMes(mes);
+
+  if(chartBarras) chartBarras.destroy();
+  chartBarras = new Chart(document.getElementById('chart-barras').getContext('2d'),{
     type:'bar',
-    data:{labels:HIST.map(d=>d.l),datasets:[
-      {label:'Entradas',data:HIST.map(d=>d.e),backgroundColor:'#10b981',borderRadius:4},
-      {label:'Saídas',data:HIST.map(d=>d.s),backgroundColor:'#ef4444',borderRadius:4}
+    data:{labels:ultimos6.map(x=>x.l),datasets:[
+      {label:'Entradas',data:ultimos6.map(x=>x.e),backgroundColor:'#10b981',borderRadius:4},
+      {label:'Saídas',data:ultimos6.map(x=>x.s),backgroundColor:'#ef4444',borderRadius:4}
     ]},
     options:{responsive:true,maintainAspectRatio:true,
       plugins:{legend:{labels:{font:{size:12}}}},
       scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`,font:{size:11}},grid:{color:'#f3f4f6'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}
   });
-  chartPS=mkPizza('chart-ps',DADOS['2026-04'].cs);
-  chartPE=mkPizza('chart-pe',DADOS['2026-04'].ce);
-  renderLeg('leg-s',DADOS['2026-04'].cs);
-  renderLeg('leg-e',DADOS['2026-04'].ce);
-  atualizarKPIs('2026-04');
-  renderDashLanc('2026-04');
+
+  if(chartPS) chartPS.destroy();
+  if(chartPE) chartPE.destroy();
+
+  if(d.cs.length > 0){
+    chartPS = mkPizza('chart-ps', d.cs);
+    renderLeg('leg-s', d.cs);
+  } else {
+    document.getElementById('leg-s').innerHTML = '<div class="empty" style="padding:20px;">Sem saídas neste mês</div>';
+  }
+  if(d.ce.length > 0){
+    chartPE = mkPizza('chart-pe', d.ce);
+    renderLeg('leg-e', d.ce);
+  } else {
+    document.getElementById('leg-e').innerHTML = '<div class="empty" style="padding:20px;">Sem entradas neste mês</div>';
+  }
 }
 
-function mkPizza(id,cats){
+function mkPizza(id, cats){
   return new Chart(document.getElementById(id).getContext('2d'),{
     type:'doughnut',
     data:{labels:cats.map(c=>c.n),datasets:[{data:cats.map(c=>c.v),backgroundColor:cats.map(c=>c.c),borderWidth:2,borderColor:'#fff'}]},
@@ -594,9 +659,9 @@ function mkPizza(id,cats){
   });
 }
 
-function renderLeg(id,cats){
-  const total=cats.reduce((s,c)=>s+c.v,0);
-  document.getElementById(id).innerHTML=cats.slice().sort((a,b)=>b.v-a.v).map(c=>`
+function renderLeg(id, cats){
+  const total = cats.reduce((s,c)=>s+c.v,0);
+  document.getElementById(id).innerHTML = cats.slice().sort((a,b)=>b.v-a.v).map(c=>`
     <div class="leg-item">
       <span class="leg-dot" style="background:${c.c}"></span>
       <span class="leg-nome">${c.n}</span>
@@ -605,64 +670,26 @@ function renderLeg(id,cats){
     </div>`).join('');
 }
 
-function atualizarKPIs(mes){
-  const d=DADOS[mes],ant=MANT[mes]?DADOS[MANT[mes]]:null;
-  const res=d.e-d.s,mrg=(res/d.e)*100,pct=(d.s/d.e)*100;
-  document.getElementById('mes-label').textContent=MNOME[mes];
-  document.getElementById('kpi-e').textContent=fmt(d.e);
-  document.getElementById('kpi-s').textContent=fmt(d.s);
-  document.getElementById('kpi-r').textContent=fmt(res);
-  document.getElementById('kpi-m').textContent=mrg.toFixed(1)+'%';
-  const vE=ant?((d.e-ant.e)/ant.e*100):null;
-  const vS=ant?((d.s-ant.s)/ant.s*100):null;
-  const eE=document.getElementById('kpi-ev'),eS=document.getElementById('kpi-sv');
-  eE.textContent=vE!=null?`${vE>0?'↑':'↓'} ${vE>0?'+':''}${vE.toFixed(1)}% vs mês anterior`:'';
-  eE.className='kvar '+(vE>=0?'up':'dn');
-  eS.textContent=vS!=null?`${vS>0?'↑':'↓'} ${vS>0?'+':''}${vS.toFixed(1)}% vs mês anterior`:'';
-  eS.className='kvar '+(vS>=0?'up':'dn');
-  document.getElementById('kpi-m').closest('.kpi').className='kpi '+(mrg>=20?'verde':mrg>=0?'amarelo':'vermelho');
-  document.getElementById('kpi-r').closest('.kpi').className='kpi '+(res>=0?'azul':'vermelho');
-  const f=document.getElementById('prog-fill');
-  f.style.width=Math.min(pct,100)+'%';
-  f.style.background=pct>90?'#ef4444':pct>70?'#f59e0b':'#10b981';
-  document.getElementById('prog-pct').textContent=pct.toFixed(1)+'% das entradas comprometidas';
-  document.getElementById('prog-max').textContent=fmt(d.e);
-}
-
 function renderDashLanc(mes){
-  const lancs=LANCS.filter(l=>l.mes===mes).slice(0,8);
-  document.getElementById('dash-lanc').innerHTML=lancs.length
-    ?lancs.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f4f6;">
-      <div style="display:flex;align-items:center;gap:9px;">
-        <span style="font-size:15px;">${l.tipo==='entrada'?'⬆':'⬇'}</span>
-        <div><div style="font-size:13px;font-weight:500;color:#374151;">${l.desc}</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${l.data} <span style="background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:4px;">${l.cat}</span></div></div>
-      </div>
-      <span class="${l.tipo==='entrada'?'ve':'vs'}">${l.tipo==='saida'?'- ':'+ '}${fmt(l.valor)}</span>
-    </div>`).join('')
-    :'<div class="empty">Sem lançamentos neste mês</div>';
-}
-
-function trocarMes(mes){
-  atualizarKPIs(mes);
-  const d=DADOS[mes];
-  [chartPS,chartPE].forEach((c,i)=>{
-    const cats=i===0?d.cs:d.ce;
-    c.data.datasets[0].data=cats.map(x=>x.v);
-    c.data.datasets[0].backgroundColor=cats.map(x=>x.c);
-    c.data.labels=cats.map(x=>x.n);
-    c.update();
-  });
-  renderLeg('leg-s',d.cs); renderLeg('leg-e',d.ce);
-  renderDashLanc(mes);
+  const lancs = LANCS.filter(l=>l.mes===mes).slice(0,8);
+  document.getElementById('dash-lanc').innerHTML = lancs.length
+    ? lancs.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f3f4f6;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="font-size:15px;">${l.tipo==='entrada'?'⬆':'⬇'}</span>
+          <div><div style="font-size:13px;font-weight:500;color:#374151;">${l.desc}</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${l.data} <span style="background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:4px;">${l.cat}</span></div></div>
+        </div>
+        <span class="${l.tipo==='entrada'?'ve':'vs'}">${l.tipo==='saida'?'- ':'+ '}${fmt(l.valor)}</span>
+      </div>`).join('')
+    : '<div class="empty">Nenhum lançamento neste mês.<br>Importe um extrato para começar.</div>';
 }
 
 // ══════════════════════════════════════════════
 // LANÇAMENTOS
 // ══════════════════════════════════════════════
 function renderTabelaLanc(lista){
-  document.getElementById('tbody-lanc').innerHTML=lista.length
-    ?lista.map(l=>`<tr id="row-${l.id}">
+  document.getElementById('tbody-lanc').innerHTML = lista.length
+    ? lista.map(l=>`<tr id="row-${l.id}">
         <td>${l.data}</td><td>${l.desc}</td>
         <td><span class="badge cinza">${l.cat}</span></td>
         <td><span class="badge ${l.tipo}">${l.tipo==='entrada'?'Entrada':'Saída'}</span></td>
@@ -672,14 +699,14 @@ function renderTabelaLanc(lista){
           <button class="btn bd" style="padding:3px 8px;font-size:11px;" onclick="excluirLanc(${l.id})">Excluir</button>
         </td>
       </tr>`).join('')
-    :'<tr><td colspan="6" class="empty">Nenhum lançamento encontrado</td></tr>';
+    : '<tr><td colspan="6" class="empty">Nenhum lançamento encontrado</td></tr>';
 }
 
 function filtrarLanc(){
-  const busca=document.getElementById('f-busca').value.toLowerCase();
-  const tipo=document.getElementById('f-tipo').value;
-  const cat=document.getElementById('f-cat').value;
-  const mes=document.getElementById('f-mes').value;
+  const busca = document.getElementById('f-busca').value.toLowerCase();
+  const tipo  = document.getElementById('f-tipo').value;
+  const cat   = document.getElementById('f-cat').value;
+  const mes   = document.getElementById('f-mes').value;
   renderTabelaLanc(LANCS.filter(l=>
     (!busca||l.desc.toLowerCase().includes(busca))&&
     (!tipo||l.tipo===tipo)&&
@@ -689,50 +716,42 @@ function filtrarLanc(){
 }
 
 function catOptions(sel=''){
-  return [...CAT_ENTRADA,...CAT_SAIDA].map(c=>`<option${sel===c.n?' selected':''}>${c.n}</option>`).join('');
+  return [...CATS.entrada,...CATS.saida].map(c=>`<option${sel===c.n?' selected':''}>${c.n}</option>`).join('');
 }
 
 function abrirModalNovoLanc(){
-  const hoje=new Date().toISOString().slice(0,10);
+  const hoje = new Date().toISOString().slice(0,10);
   abrirModal('Novo Lançamento',`
     <div class="fg"><label class="fl">Tipo</label>
-      <select id="nl-tipo" class="fi">
-        <option value="entrada">Entrada</option>
-        <option value="saida">Saída</option>
-      </select></div>
-    <div class="fg"><label class="fl">Descrição</label><input type="text" id="nl-desc" class="fi" placeholder="Ex: Mensalidade turma A"/></div>
+      <select id="nl-tipo" class="fi"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
+    <div class="fg"><label class="fl">Descrição</label><input type="text" id="nl-desc" class="fi" placeholder="Ex: Pagamento recebido"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Data</label><input type="date" id="nl-data" class="fi" value="${hoje}"/></div>
       <div class="fg"><label class="fl">Valor (R$)</label><input type="number" id="nl-valor" class="fi" placeholder="0,00" min="0" step="0.01"/></div>
     </div>
-    <div class="fg"><label class="fl">Categoria</label><select id="nl-cat" class="fi">${catOptions()}</select></div>
-    <div class="fg"><label class="fl">Mês de referência</label>
-      <select id="nl-mes" class="fi">
-        <option value="2026-04">Abril 2026</option><option value="2026-03">Março 2026</option>
-        <option value="2026-02">Fevereiro 2026</option><option value="2026-01">Janeiro 2026</option>
-        <option value="2025-12">Dezembro 2025</option><option value="2025-11">Novembro 2025</option>
-      </select></div>`,
+    <div class="fg"><label class="fl">Categoria</label><select id="nl-cat" class="fi">${catOptions()}</select></div>`,
     `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
      <button class="btn bp" onclick="salvarNovoLanc()">Salvar</button>`
   );
 }
 
 function salvarNovoLanc(){
-  const desc=document.getElementById('nl-desc').value.trim();
-  const valor=parseFloat(document.getElementById('nl-valor').value);
-  if(!desc){toast('Informe a descrição','erro');return;}
-  if(!valor||valor<=0){toast('Informe um valor válido','erro');return;}
-  const dataRaw=document.getElementById('nl-data').value;
-  const [y,m,dd]=dataRaw.split('-');
+  const desc = document.getElementById('nl-desc').value.trim();
+  const valor = parseFloat(document.getElementById('nl-valor').value);
+  if(!desc){ toast('Informe a descrição','erro'); return; }
+  if(!valor||valor<=0){ toast('Informe um valor válido','erro'); return; }
+  const dataRaw = document.getElementById('nl-data').value;
+  const [y,m,dd] = dataRaw.split('-');
+  const mes = `${y}-${m}`;
   LANCS.unshift({id:nextId++,tipo:document.getElementById('nl-tipo').value,desc,
-    cat:document.getElementById('nl-cat').value,data:`${dd}/${m}/${y}`,
-    mes:document.getElementById('nl-mes').value,valor});
-  salvarDados(); fecharModal(); filtrarLanc(); toast('Lançamento adicionado!','sucesso');
+    cat:document.getElementById('nl-cat').value,data:`${dd}/${m}/${y}`,mes,valor});
+  salvarDados(); popularSelects(); filtrarLanc();
+  fecharModal(); toast('Lançamento adicionado!','sucesso');
 }
 
 function editarLanc(id){
-  const l=LANCS.find(x=>x.id===id); if(!l)return;
-  const [dd,mm,yy]=l.data.split('/');
+  const l = LANCS.find(x=>x.id===id); if(!l) return;
+  const [dd,mm,yy] = l.data.split('/');
   abrirModal('Editar Lançamento',`
     <div class="fg"><label class="fl">Tipo</label>
       <select id="el-tipo" class="fi">
@@ -751,33 +770,33 @@ function editarLanc(id){
 }
 
 function salvarEdicaoLanc(id){
-  const l=LANCS.find(x=>x.id===id);
-  const desc=document.getElementById('el-desc').value.trim();
-  const valor=parseFloat(document.getElementById('el-valor').value);
-  if(!desc||!valor){toast('Preencha todos os campos','erro');return;}
-  const dataRaw=document.getElementById('el-data').value;
-  const [y,m,dd]=dataRaw.split('-');
-  l.tipo=document.getElementById('el-tipo').value;
-  l.desc=desc; l.valor=valor;
-  l.cat=document.getElementById('el-cat').value;
-  l.data=`${dd}/${m}/${y}`;
-  salvarDados(); fecharModal(); filtrarLanc(); toast('Lançamento atualizado!','sucesso');
+  const l = LANCS.find(x=>x.id===id);
+  const desc = document.getElementById('el-desc').value.trim();
+  const valor = parseFloat(document.getElementById('el-valor').value);
+  if(!desc||!valor){ toast('Preencha todos os campos','erro'); return; }
+  const dataRaw = document.getElementById('el-data').value;
+  const [y,m,dd] = dataRaw.split('-');
+  l.tipo = document.getElementById('el-tipo').value;
+  l.desc = desc; l.valor = valor;
+  l.cat  = document.getElementById('el-cat').value;
+  l.data = `${dd}/${m}/${y}`; l.mes = `${y}-${m}`;
+  salvarDados(); filtrarLanc(); fecharModal(); toast('Lançamento atualizado!','sucesso');
 }
 
 function excluirLanc(id){
   abrirModal('Confirmar exclusão',
-    '<p style="font-size:14px;color:#374151;">Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.</p>',
+    '<p style="font-size:14px;color:#374151;">Tem certeza que deseja excluir este lançamento?</p>',
     `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
      <button class="btn bd" onclick="confirmarExclusao(${id})">Excluir</button>`
   );
 }
 function confirmarExclusao(id){
-  LANCS=LANCS.filter(x=>x.id!==id);
-  salvarDados(); fecharModal(); filtrarLanc(); toast('Lançamento excluído');
+  LANCS = LANCS.filter(x=>x.id!==id);
+  salvarDados(); filtrarLanc(); fecharModal(); toast('Lançamento excluído');
 }
 
 // ══════════════════════════════════════════════
-// IMPORTAR — LEITURA REAL DE CSV
+// IMPORTAR — LEITURA REAL
 // ══════════════════════════════════════════════
 let csvArquivo = null;
 let csvLinhas = [];
@@ -789,7 +808,6 @@ function onFileSelected(input){
   document.getElementById('upload-label').textContent = '📄 ' + file.name;
   const ext = file.name.split('.').pop().toLowerCase();
   if(ext === 'xlsx' || ext === 'xls'){
-    // Ler como Excel (Bradesco)
     const reader = new FileReader();
     reader.onload = e => {
       try {
@@ -798,55 +816,49 @@ function onFileSelected(input){
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
         csvLinhas = parsearBradescoXLSX(rows);
         document.getElementById('import-banco').value = 'bradesco';
-        mostrarPreview('bradesco', csvLinhas);
-      } catch(err){ toast('Erro ao ler arquivo Excel: ' + err.message, 'erro'); }
+        mostrarPreview('Bradesco', csvLinhas);
+      } catch(err){ toast('Erro ao ler arquivo: '+err.message, 'erro'); }
     };
     reader.readAsArrayBuffer(file);
   } else {
-    // Ler como CSV (Nubank)
     const reader = new FileReader();
     reader.onload = e => {
-      const texto = e.target.result;
-      csvLinhas = parsearNubank(texto);
+      csvLinhas = parsearNubank(e.target.result);
       document.getElementById('import-banco').value = 'nubank';
-      mostrarPreview('nubank', csvLinhas);
+      mostrarPreview('Nubank', csvLinhas);
     };
     reader.readAsText(file, 'UTF-8');
   }
 }
 
 function parsearNubank(texto){
-  // Nubank CSV: Data,Valor,Identificador,Descrição
+  // Formato: Data,Valor,Identificador,Descrição
   const linhas = texto.trim().split('\n');
   const resultado = [];
   for(let i = 1; i < linhas.length; i++){
     const linha = linhas[i].trim();
     if(!linha) continue;
-    // split por vírgula respeitando campos com aspas
     const cols = linha.match(/(".*?"|[^,]+)(?=,|$)/g);
     if(!cols || cols.length < 4) continue;
-    const data  = cols[0].trim().replace(/^"|"$/g,'');
+    const data     = cols[0].trim().replace(/^"|"$/g,'');
     const valorRaw = cols[1].trim().replace(/^"|"$/g,'');
-    const desc  = cols[3].trim().replace(/^"|"$/g,'');
-    if(!data || !valorRaw || !desc) continue;
+    const desc     = cols[3].trim().replace(/^"|"$/g,'');
+    if(!data||!valorRaw||!desc) continue;
     const valor = parseFloat(valorRaw);
     if(isNaN(valor)) continue;
     const tipo = valor < 0 ? 'saida' : 'entrada';
-    const dataFmt = formatarData(data);
-    const mes = extrairMes(data);
-    resultado.push({tipo, desc, valor: Math.abs(valor), data: dataFmt, mes, cat: sugerirCategoria(desc), origem:'Nubank'});
+    resultado.push({tipo, desc, valor: Math.abs(valor), data: formatarData(data), mes: extrairMes(data), cat: sugerirCategoria(desc, tipo), origem:'Nubank'});
   }
   return resultado;
 }
 
 function parsearBradescoXLSX(rows){
   // Formato: Data do Lançamento | Descrição | Documento | Tipo | Valor R$ | Saldo R$
-  // Tipo: "Crédito" ou "Débito"
   const resultado = [];
   let headerIdx = -1;
   for(let i = 0; i < rows.length; i++){
     const row = rows[i].map(c => String(c).toLowerCase());
-    if(row.some(c => c.includes('data do lan')) || (row.some(c=>c.includes('data')) && row.some(c=>c.includes('tipo')))){
+    if(row.some(c=>c.includes('data')) && row.some(c=>c.includes('tipo'))){
       headerIdx = i; break;
     }
   }
@@ -854,195 +866,119 @@ function parsearBradescoXLSX(rows){
   for(let i = headerIdx + 1; i < rows.length; i++){
     const cols = rows[i];
     if(!cols || cols.length < 5) continue;
-    const data  = String(cols[0]||'').trim();
-    const desc  = String(cols[1]||'').trim();
+    const data     = String(cols[0]||'').trim();
+    const desc     = String(cols[1]||'').trim();
     const tipo_raw = String(cols[3]||'').trim().toLowerCase();
     const valorRaw = String(cols[4]||'').trim();
-    if(!data || !desc || !valorRaw) continue;
+    if(!data||!desc||!valorRaw) continue;
     const valor = Math.abs(parseFloat(valorRaw.replace(/\./g,'').replace(',','.'))) || 0;
     if(valor === 0) continue;
-    const tipo = tipo_raw.includes('déb') || tipo_raw.includes('deb') ? 'saida' : 'entrada';
-    const dataFmt = formatarData(data);
-    const mes = extrairMes(data);
-    resultado.push({tipo, desc, valor, data: dataFmt, mes, cat: sugerirCategoria(desc), origem:'Bradesco'});
+    const tipo = tipo_raw.includes('déb')||tipo_raw.includes('deb') ? 'saida' : 'entrada';
+    resultado.push({tipo, desc, valor, data: formatarData(data), mes: extrairMes(data), cat: sugerirCategoria(desc, tipo), origem:'Bradesco'});
   }
   return resultado;
 }
 
 function formatarData(d){
-  // suporta yyyy-mm-dd ou dd/mm/yyyy
   if(!d) return '';
   if(d.includes('-')){ const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
   return d;
 }
-
 function extrairMes(d){
-  if(!d) return '2026-05';
-  if(d.includes('-')){ return d.slice(0,7); }
+  if(!d) return '';
+  if(d.includes('-')) return d.slice(0,7);
   if(d.includes('/')){ const p=d.split('/'); return `${p[2]}-${p[1].padStart(2,'0')}`; }
-  return '2026-05';
+  return '';
 }
-
-function sugerirCategoria(desc){
+function sugerirCategoria(desc, tipo){
   const d = desc.toLowerCase();
-  if(d.includes('salário')||d.includes('salario')||d.includes('mensalidade')) return 'Mensalidade Presencial';
-  if(d.includes('consultoria')) return 'Pagamento de Consultoria';
-  if(d.includes('imposto')||d.includes('das')||d.includes('darf')||d.includes('irpf')) return 'Imposto';
-  if(d.includes('google')||d.includes('meta')||d.includes('facebook')||d.includes('ads')) return 'Anúncios';
-  if(d.includes('curso')||d.includes('mentoria')||d.includes('treinamento')) return 'Cursos e Mentorias';
-  if(d.includes('câmera')||d.includes('camera')||d.includes('audio')||d.includes('microfone')) return 'Equipamento Audiovisual';
-  if(d.includes('software')||d.includes('assinatura')||d.includes('ferramenta')) return 'Ferramentas Digitais';
-  if(d.includes('equipe')||d.includes('funcionário')||d.includes('funcionario')||d.includes('colaborador')) return 'Custo de Equipe';
-  return 'Outros';
+  if(tipo==='entrada'){
+    if(d.includes('transferência recebida')||d.includes('transferencia recebida')||d.includes('pix')||d.includes('recebida')) return 'Transferência Recebida';
+    if(d.includes('consultoria')) return 'Consultoria';
+    if(d.includes('rentab')||d.includes('juros')||d.includes('invest')) return 'Receita / Entrada';
+    return 'Receita / Entrada';
+  } else {
+    if(d.includes('farmácia')||d.includes('farmacia')||d.includes('drogaria')||d.includes('saúde')||d.includes('hospital')) return 'Saúde / Farmácia';
+    if(d.includes('restaurante')||d.includes('lanche')||d.includes('pizza')||d.includes('aliment')||d.includes('açaí')||d.includes('carne')||d.includes('mercado')||d.includes('supermercado')||d.includes('hortifrut')) return 'Alimentação';
+    if(d.includes('parking')||d.includes('combustível')||d.includes('uber')||d.includes('99')||d.includes('posto')||d.includes('detran')) return 'Transporte';
+    if(d.includes('imposto')||d.includes('das')||d.includes('darf')||d.includes('irpf')||d.includes('dnit')) return 'Impostos';
+    if(d.includes('google')||d.includes('meta')||d.includes('software')||d.includes('assinatura')) return 'Ferramentas / Serviços';
+    if(d.includes('ingresso')||d.includes('cinema')||d.includes('show')||d.includes('sympla')||d.includes('tamar')||d.includes('lazer')) return 'Lazer';
+    return 'Outros (saída)';
+  }
 }
 
 function mostrarPreview(banco, linhas){
   const info = document.getElementById('import-info');
   const preview = document.getElementById('import-preview');
   const tbl = document.getElementById('preview-table');
-  info.textContent = `✓ Banco detectado: ${banco.charAt(0).toUpperCase()+banco.slice(1)} — ${linhas.length} lançamentos encontrados`;
+  if(linhas.length === 0){
+    info.style.background='#fef2f2'; info.style.borderColor='#fca5a5'; info.style.color='#991b1b';
+    info.textContent = '⚠ Nenhum lançamento encontrado. Verifique se o arquivo é do Nubank (CSV) ou Bradesco (XLSX).';
+    preview.style.display = 'block'; tbl.innerHTML=''; return;
+  }
+  info.style.background='#f0fdf4'; info.style.borderColor='#bbf7d0'; info.style.color='#065f46';
+  info.textContent = `✓ Banco: ${banco} — ${linhas.length} lançamentos encontrados`;
   const amostra = linhas.slice(0,5);
-  tbl.innerHTML = `<tr style="background:#f9fafb;"><th style="padding:6px 8px;text-align:left;font-size:11px;">Data</th><th style="padding:6px 8px;text-align:left;font-size:11px;">Descrição</th><th style="padding:6px 8px;text-align:left;font-size:11px;">Tipo</th><th style="padding:6px 8px;text-align:right;font-size:11px;">Valor</th></tr>`
-    + amostra.map(l=>`<tr><td style="padding:5px 8px;font-size:12px;">${l.data}</td><td style="padding:5px 8px;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.desc}</td><td style="padding:5px 8px;font-size:12px;"><span class="badge ${l.tipo}">${l.tipo==='entrada'?'Entrada':'Saída'}</span></td><td style="padding:5px 8px;font-size:12px;text-align:right;" class="${l.tipo==='entrada'?'ve':'vs'}">${fmt(l.valor)}</td></tr>`).join('');
+  tbl.innerHTML = `<tr style="background:#f9fafb;"><th style="padding:6px 8px;text-align:left;font-size:11px;">Data</th><th style="padding:6px 8px;text-align:left;font-size:11px;">Descrição</th><th style="padding:6px 8px;text-align:left;font-size:11px;">Categoria</th><th style="padding:6px 8px;text-align:right;font-size:11px;">Valor</th></tr>`
+    + amostra.map(l=>`<tr><td style="padding:5px 8px;font-size:12px;">${l.data}</td><td style="padding:5px 8px;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.desc}</td><td style="padding:5px 8px;font-size:12px;">${l.cat}</td><td style="padding:5px 8px;font-size:12px;text-align:right;" class="${l.tipo==='entrada'?'ve':'vs'}">${fmt(l.valor)}</td></tr>`).join('');
   preview.style.display = 'block';
 }
 
 function processarImport(){
-  if(!csvArquivo){ toast('Selecione um arquivo CSV primeiro','erro'); return; }
+  if(!csvArquivo){ toast('Selecione um arquivo primeiro','erro'); return; }
   if(csvLinhas.length === 0){ toast('Nenhum lançamento encontrado no arquivo','erro'); return; }
-  const prog = document.getElementById('import-progress');
-  const fill = document.getElementById('import-fill');
-  const status = document.getElementById('import-status');
-  prog.style.display = 'block'; fill.style.width = '0%';
-  status.textContent = 'Importando lançamentos...';
   let adicionados = 0;
   csvLinhas.forEach(l => {
-    const jaExiste = LANCS.some(x => x.data===l.data && x.desc===l.desc && x.valor===l.valor);
-    if(!jaExiste){ LANCS.unshift({id:nextId++, ...l}); adicionados++; }
+    const jaExiste = LANCS.some(x=>x.data===l.data&&x.desc===l.desc&&x.valor===l.valor);
+    if(!jaExiste){ LANCS.unshift({id:nextId++,...l}); adicionados++; }
   });
-  fill.style.width = '100%';
-  status.textContent = `✓ ${adicionados} lançamentos importados (${csvLinhas.length - adicionados} duplicatas ignoradas)`;
-  salvarDados();
-  // registrar no histórico
+  salvarDados(); popularSelects();
+
   const hoje = new Date();
   const d = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-  const tbody = document.getElementById('tbody-import');
-  const tr = document.createElement('tr');
   const banco = document.getElementById('import-banco').value;
-  tr.innerHTML = `<td>${d}</td><td>${csvArquivo.name}</td><td>${banco.charAt(0).toUpperCase()+banco.slice(1)}</td><td>${adicionados}</td><td><span class="badge verde">✓ Importado</span></td>`;
-  tbody.insertBefore(tr, tbody.firstChild);
+  IMPORT_HIST.unshift({data:d, arquivo:csvArquivo.name, banco, registros:adicionados});
+  salvarDados();
+  renderHistImport();
+
   filtrarLanc();
-  toast(`${adicionados} lançamentos importados com sucesso!`, 'sucesso');
-  csvArquivo = null; csvLinhas = [];
-  document.getElementById('upload-label').textContent = 'Clique ou arraste o arquivo CSV aqui';
-  document.getElementById('import-preview').style.display = 'none';
-  setTimeout(()=>{ prog.style.display='none'; }, 3000);
+  toast(`${adicionados} lançamentos importados!`, 'sucesso');
+  csvArquivo=null; csvLinhas=[];
+  document.getElementById('upload-label').textContent='Clique ou arraste o arquivo aqui';
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('import-fill').style.width='100%';
+  document.getElementById('import-progress').style.display='block';
+  document.getElementById('import-status').textContent=`✓ ${adicionados} importados (${csvLinhas.length-adicionados} duplicatas ignoradas)`;
+  setTimeout(()=>document.getElementById('import-progress').style.display='none',3000);
 }
 
-// ══════════════════════════════════════════════
-// PENDENTES
-// ══════════════════════════════════════════════
-function abrirCategorizar(rowId,desc){
-  const opts=[...CAT_ENTRADA,...CAT_SAIDA].map(c=>`<option>${c.n}</option>`).join('');
-  // captura tipo e valor da linha pendente
-  const row=document.getElementById(rowId);
-  const valorTxt=row?row.cells[2].textContent.replace(/[^\d,]/g,'').replace(',','.'):0;
-  const valor=parseFloat(valorTxt)||0;
-  const isSaida=row?row.cells[2].textContent.includes('−'):false;
-  const tipo=isSaida?'saida':'entrada';
-  const dataTxt=row?row.cells[0].textContent:'01/04/2026';
-  abrirModal('Categorizar Lançamento',`
-    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;"><strong>${desc}</strong></p>
-    <div class="fg"><label class="fl">Categoria</label>
-      <select id="cat-sel" class="fi">${opts}</select></div>
-    <div class="fg"><label class="fl">Mês de referência</label>
-      <select id="cat-mes" class="fi">
-        ${Object.entries(MNOME).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
-      </select></div>`,
-    `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
-     <button class="btn bp" onclick="aplicarCategoria('${rowId}','${desc}','${tipo}',${valor},'${dataTxt}')">Mover para Lançamentos</button>`
-  );
-}
-function aplicarCategoria(rowId,desc,tipo,valor,data){
-  const cat=document.getElementById('cat-sel').value;
-  const mes=document.getElementById('cat-mes').value;
-  // adiciona ao array de lançamentos
-  LANCS.unshift({id:nextId++,tipo,desc,cat,data,mes,valor});
-  // remove linha da tabela de pendentes com animação
-  const row=document.getElementById(rowId);
-  if(row){row.style.opacity='0';row.style.transition='opacity .3s';
-    setTimeout(()=>{row.remove();},300);}
-  // atualiza tabela de lançamentos (mês corrente do filtro)
-  filtrarLanc();
-  fecharModal();
-  toast(`Lançamento movido para ${MNOME[mes]||mes}!`,'sucesso');
-}
-function confirmarPendente(rowId){
-  const row=document.getElementById(rowId);
-  if(row){row.style.opacity='0';row.style.transition='opacity .3s';
-    setTimeout(()=>{row.remove();toast('Lançamento confirmado!','sucesso');},300);}
-}
-function resolverTodos(){
-  document.querySelectorAll('#tbody-pend tr').forEach(r=>{r.style.opacity='0';r.style.transition='opacity .3s';});
-  setTimeout(()=>{document.getElementById('tbody-pend').innerHTML='<tr><td colspan="6" class="empty">Nenhum lançamento pendente 🎉</td></tr>';
-    toast('Todos os pendentes resolvidos!','sucesso');},350);
-}
-
-// ══════════════════════════════════════════════
-// FECHAMENTOS
-// ══════════════════════════════════════════════
-function verFechamento(nome,e,s){
-  const ei=parseInt(e),si=parseInt(s),res=ei-si,mrg=((res/ei)*100).toFixed(1);
-  abrirModal(`Fechamento — ${nome}`,`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-      <div style="background:#f0fdf4;border-radius:10px;padding:14px;border-left:3px solid #10b981;">
-        <div style="font-size:11px;color:#6b7280;font-weight:600;">ENTRADAS</div>
-        <div style="font-size:20px;font-weight:700;color:#065f46;margin-top:4px;">${fmt(ei)}</div>
-      </div>
-      <div style="background:#fef2f2;border-radius:10px;padding:14px;border-left:3px solid #ef4444;">
-        <div style="font-size:11px;color:#6b7280;font-weight:600;">SAÍDAS</div>
-        <div style="font-size:20px;font-weight:700;color:#991b1b;margin-top:4px;">${fmt(si)}</div>
-      </div>
-      <div style="background:#eff6ff;border-radius:10px;padding:14px;border-left:3px solid #3b82f6;">
-        <div style="font-size:11px;color:#6b7280;font-weight:600;">RESULTADO</div>
-        <div style="font-size:20px;font-weight:700;color:#1e40af;margin-top:4px;">${fmt(res)}</div>
-      </div>
-      <div style="background:#f0fdf4;border-radius:10px;padding:14px;border-left:3px solid #10b981;">
-        <div style="font-size:11px;color:#6b7280;font-weight:600;">MARGEM</div>
-        <div style="font-size:20px;font-weight:700;color:#065f46;margin-top:4px;">${mrg}%</div>
-      </div>
-    </div>
-    <p style="font-size:12px;color:#9ca3af;text-align:center;">Dados fictícios — apenas demonstração</p>`,
-    `<button class="btn bs" onclick="fecharModal()">Fechar</button>`
-  );
-}
-
-function abrirModalFechamento(){
-  abrirModal('Novo Fechamento',`
-    <div class="fg"><label class="fl">Mês de referência</label>
-      <select id="nf-mes" class="fi">
-        <option value="2026-05">Maio 2026</option><option value="2026-04">Abril 2026</option>
-        <option value="2026-03">Março 2026</option>
-      </select></div>
-    <div class="fg"><label class="fl">Observações</label>
-      <textarea id="nf-obs" class="fi" rows="3" placeholder="Observações sobre este fechamento..."></textarea></div>`,
-    `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
-     <button class="btn bp" onclick="fecharModal();toast('Fechamento criado!','sucesso')">Criar fechamento</button>`
-  );
-}
-
-function fecharMes(nome){
-  abrirModal('Fechar mês',`
-    <p style="font-size:14px;color:#374151;margin-bottom:12px;">Deseja fechar o mês de <strong>${nome}</strong>?</p>
-    <p style="font-size:13px;color:#6b7280;">Após fechar, os lançamentos deste mês não poderão ser editados.</p>`,
-    `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
-     <button class="btn bp" onclick="fecharModal();toast('${nome} fechado com sucesso!','sucesso')">Confirmar fechamento</button>`
-  );
+function renderHistImport(){
+  const tbody = document.getElementById('tbody-import');
+  tbody.innerHTML = IMPORT_HIST.length
+    ? IMPORT_HIST.map(h=>`<tr><td>${h.data}</td><td>${h.arquivo}</td><td>${h.banco}</td><td>${h.registros}</td><td><span class="badge verde">✓ Importado</span></td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Nenhuma importação ainda</td></tr>';
 }
 
 // ══════════════════════════════════════════════
 // CATEGORIAS
 // ══════════════════════════════════════════════
+function renderCategorias(){
+  ['entrada','saida'].forEach(tipo => {
+    const id = tipo==='entrada'?'tbody-cat-e':'tbody-cat-s';
+    document.getElementById(id).innerHTML = CATS[tipo].length
+      ? CATS[tipo].map((c,i)=>`<tr>
+          <td><span class="cc" style="background:${c.c};"></span></td>
+          <td>${c.n}</td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('${tipo}',${i})">Editar</button>
+            <button class="btn bd" style="padding:3px 8px;font-size:11px;" onclick="excluirCategoria('${tipo}',${i})">Excluir</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="3" class="empty">Nenhuma categoria</td></tr>';
+  });
+}
+
 function abrirModalNovaCategoria(){
   abrirModal('Nova Categoria',`
     <div class="fg"><label class="fl">Nome</label><input type="text" id="nc-nome" class="fi" placeholder="Nome da categoria"/></div>
@@ -1057,62 +993,201 @@ function abrirModalNovaCategoria(){
 }
 
 function salvarNovaCategoria(){
-  const nome=document.getElementById('nc-nome').value.trim();
-  if(!nome){toast('Informe o nome','erro');return;}
-  const tipo=document.getElementById('nc-tipo').value;
-  const cor=document.getElementById('nc-cor').value;
-  const tbody=document.getElementById(tipo==='entrada'?'tbody-cat-e':'tbody-cat-s');
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td><span class="cc" style="background:${cor};"></span></td><td>${nome}</td><td>0</td>
-    <td class="${tipo==='entrada'?'ve':'vs'}">R$ 0,00</td>
-    <td><button class="btn bs" style="padding:3px 8px;font-size:11px;" onclick="editarCategoria('${nome}','${cor}','${tipo}')">Editar</button></td>`;
-  tbody.appendChild(tr);
-  fecharModal(); toast(`Categoria "${nome}" criada!`,'sucesso');
+  const nome = document.getElementById('nc-nome').value.trim();
+  if(!nome){ toast('Informe o nome','erro'); return; }
+  const tipo = document.getElementById('nc-tipo').value;
+  const cor  = document.getElementById('nc-cor').value;
+  CATS[tipo].push({n:nome, c:cor});
+  salvarDados(); renderCategorias(); fecharModal(); toast(`Categoria "${nome}" criada!`,'sucesso');
 }
 
-function editarCategoria(nome,cor,tipo){
+function editarCategoria(tipo, idx){
+  const cat = CATS[tipo][idx];
   abrirModal('Editar Categoria',`
-    <div class="fg"><label class="fl">Nome</label><input type="text" id="ec-nome" class="fi" value="${nome}"/></div>
+    <div class="fg"><label class="fl">Nome</label><input type="text" id="ec-nome" class="fi" value="${cat.n}"/></div>
     <div class="fr">
       <div class="fg"><label class="fl">Tipo</label>
         <select id="ec-tipo" class="fi"><option value="entrada"${tipo==='entrada'?' selected':''}>Entrada</option><option value="saida"${tipo==='saida'?' selected':''}>Saída</option></select></div>
-      <div class="fg"><label class="fl">Cor</label><input type="color" id="ec-cor" class="fi" value="${cor}" style="height:38px;padding:4px;cursor:pointer;"/></div>
+      <div class="fg"><label class="fl">Cor</label><input type="color" id="ec-cor" class="fi" value="${cat.c}" style="height:38px;padding:4px;cursor:pointer;"/></div>
     </div>`,
     `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
-     <button class="btn bp" onclick="fecharModal();toast('Categoria atualizada!','sucesso')">Salvar</button>`
+     <button class="btn bp" onclick="salvarEdicaoCategoria('${tipo}',${idx})">Salvar</button>`
+  );
+}
+
+function salvarEdicaoCategoria(tipo, idx){
+  const nome = document.getElementById('ec-nome').value.trim();
+  if(!nome){ toast('Informe o nome','erro'); return; }
+  const novoTipo = document.getElementById('ec-tipo').value;
+  const cor = document.getElementById('ec-cor').value;
+  CATS[tipo].splice(idx,1);
+  CATS[novoTipo].push({n:nome, c:cor});
+  salvarDados(); renderCategorias(); fecharModal(); toast('Categoria atualizada!','sucesso');
+}
+
+function excluirCategoria(tipo, idx){
+  CATS[tipo].splice(idx,1);
+  salvarDados(); renderCategorias(); toast('Categoria excluída');
+}
+
+// ══════════════════════════════════════════════
+// FECHAMENTOS
+// ══════════════════════════════════════════════
+function renderFechamentos(){
+  const meses = mesesDisponiveis();
+  const tbody = document.getElementById('tbody-fechamentos');
+  if(meses.length===0||LANCS.length===0){
+    tbody.innerHTML='<tr><td colspan="6" class="empty">Nenhum dado ainda. Importe um extrato para começar.</td></tr>'; return;
+  }
+  tbody.innerHTML = meses.map(mes=>{
+    const d = calcMes(mes);
+    const res = d.e - d.s;
+    const mrg = d.e>0?(res/d.e*100).toFixed(1)+'%':'—';
+    return `<tr>
+      <td><strong>${nomeMes(mes)}</strong></td>
+      <td class="ve">${fmt(d.e)}</td>
+      <td class="vs">${fmt(d.s)}</td>
+      <td class="${res>=0?'ve':'vs'}">${fmt(res)}</td>
+      <td>${mrg}</td>
+      <td><button class="btn bs" style="padding:4px 10px;font-size:12px;" onclick="verFechamento('${mes}')">Ver detalhes</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function verFechamento(mes){
+  const d = calcMes(mes);
+  const res = d.e-d.s;
+  const mrg = d.e>0?((res/d.e)*100).toFixed(1):0;
+  abrirModal(`Fechamento — ${nomeMes(mes)}`,`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="background:#f0fdf4;border-radius:10px;padding:14px;border-left:3px solid #10b981;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;">ENTRADAS</div>
+        <div style="font-size:20px;font-weight:700;color:#065f46;margin-top:4px;">${fmt(d.e)}</div>
+      </div>
+      <div style="background:#fef2f2;border-radius:10px;padding:14px;border-left:3px solid #ef4444;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;">SAÍDAS</div>
+        <div style="font-size:20px;font-weight:700;color:#991b1b;margin-top:4px;">${fmt(d.s)}</div>
+      </div>
+      <div style="background:#eff6ff;border-radius:10px;padding:14px;border-left:3px solid #3b82f6;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;">RESULTADO</div>
+        <div style="font-size:20px;font-weight:700;color:#1e40af;margin-top:4px;">${fmt(res)}</div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:10px;padding:14px;border-left:3px solid #10b981;">
+        <div style="font-size:11px;color:#6b7280;font-weight:600;">MARGEM</div>
+        <div style="font-size:20px;font-weight:700;color:#065f46;margin-top:4px;">${mrg}%</div>
+      </div>
+    </div>`,
+    `<button class="btn bs" onclick="fecharModal()">Fechar</button>`
   );
 }
 
 // ══════════════════════════════════════════════
 // CONFIGURAÇÕES
 // ══════════════════════════════════════════════
-function salvarConfig(){
-  toast('Configurações salvas com sucesso!','sucesso');
+function carregarFormConfig(){
+  const cfg = carregarConfig();
+  document.getElementById('cfg-nome').value      = cfg.nome||'';
+  document.getElementById('cfg-email').value     = cfg.email||'';
+  document.getElementById('cfg-titulo').value    = cfg.titulo||'Painel Financeiro';
+  document.getElementById('cfg-subtitulo').value = cfg.subtitulo||'Controle de Caixa';
+  renderContas();
 }
-function editarConta(banco,tipo){
-  abrirModal(`Editar conta — ${banco}`,`
-    <div class="fg"><label class="fl">Banco</label><input type="text" id="cnt-banco" class="fi" value="${banco}"/></div>
+
+function salvarConfig(){
+  const cfg = {
+    nome:      document.getElementById('cfg-nome').value.trim(),
+    email:     document.getElementById('cfg-email').value.trim(),
+    titulo:    document.getElementById('cfg-titulo').value.trim()||'Painel Financeiro',
+    subtitulo: document.getElementById('cfg-subtitulo').value.trim()||'Controle de Caixa',
+  };
+  salvarConfigStorage(cfg);
+  aplicarConfig(cfg);
+  toast('Configurações salvas!','sucesso');
+}
+
+function aplicarConfig(cfg){
+  document.getElementById('sb-titulo').textContent    = cfg.titulo||'Painel Financeiro';
+  document.getElementById('sb-subtitulo').textContent = cfg.subtitulo||'Controle de Caixa';
+  document.title = cfg.titulo||'Painel Financeiro';
+}
+
+function renderContas(){
+  document.getElementById('tbody-contas').innerHTML = CONTAS.length
+    ? CONTAS.map((c,i)=>`<tr>
+        <td>${c.banco}</td><td>${c.tipo}</td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn bd" style="padding:3px 8px;font-size:11px;" onclick="excluirConta(${i})">Remover</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" class="empty">Nenhuma conta cadastrada</td></tr>';
+}
+
+function abrirModalNovaConta(){
+  abrirModal('Nova Conta Bancária',`
+    <div class="fg"><label class="fl">Banco</label><input type="text" id="nc-banco" class="fi" placeholder="Ex: Nubank, Bradesco"/></div>
     <div class="fg"><label class="fl">Tipo</label>
-      <select id="cnt-tipo" class="fi">
-        <option${tipo==='Conta Corrente'?' selected':''}>Conta Corrente</option>
-        <option${tipo==='Cartão de Crédito'?' selected':''}>Cartão de Crédito</option>
-        <option>Conta Poupança</option>
-      </select></div>
-    <div class="fg"><label class="fl">Status</label>
-      <select id="cnt-status" class="fi">
-        <option>Ativa</option><option>Pausada</option>
+      <select id="nc-tipoconta" class="fi">
+        <option>Conta Corrente</option><option>Conta Poupança</option><option>Cartão de Crédito</option>
       </select></div>`,
     `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
-     <button class="btn bp" onclick="fecharModal();toast('Conta atualizada!','sucesso')">Salvar</button>`
+     <button class="btn bp" onclick="salvarNovaConta()">Salvar</button>`
   );
+}
+
+function salvarNovaConta(){
+  const banco = document.getElementById('nc-banco').value.trim();
+  if(!banco){ toast('Informe o banco','erro'); return; }
+  CONTAS.push({banco, tipo:document.getElementById('nc-tipoconta').value});
+  salvarDados(); renderContas(); fecharModal(); toast('Conta adicionada!','sucesso');
+}
+
+function excluirConta(idx){
+  CONTAS.splice(idx,1);
+  salvarDados(); renderContas(); toast('Conta removida');
+}
+
+function resetarTudo(){
+  abrirModal('Resetar tudo',
+    '<p style="font-size:14px;color:#374151;">Isso apagará <strong>todos os lançamentos e configurações</strong>. Não tem como desfazer.</p>',
+    `<button class="btn bs" onclick="fecharModal()">Cancelar</button>
+     <button class="btn bd" onclick="confirmarReset()">Sim, resetar tudo</button>`
+  );
+}
+function confirmarReset(){
+  localStorage.clear();
+  location.reload();
+}
+
+// ══════════════════════════════════════════════
+// PRIMEIRO ACESSO
+// ══════════════════════════════════════════════
+function concluirSetup(){
+  const nome = document.getElementById('setup-nome').value.trim();
+  const email = document.getElementById('setup-email').value.trim();
+  const titulo = document.getElementById('setup-titulo').value.trim()||'Painel Financeiro';
+  const subtitulo = document.getElementById('setup-subtitulo').value.trim()||'Controle de Caixa';
+  if(!nome){ toast('Informe seu nome','erro'); return; }
+  const cfg = {nome, email, titulo, subtitulo};
+  salvarConfigStorage(cfg);
+  aplicarConfig(cfg);
+  document.getElementById('setup-overlay').style.display='none';
+  toast(`Bem-vindo, ${nome}!`, 'sucesso');
 }
 
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded',()=>{
-  initCharts();
-  renderTabelaLanc(LANCS.filter(l=>l.mes==='2026-04'));
+window.addEventListener('DOMContentLoaded', ()=>{
+  const cfg = carregarConfig();
+  if(!cfg.nome){
+    document.getElementById('setup-overlay').style.display='flex';
+  } else {
+    aplicarConfig(cfg);
+  }
+  popularSelects();
+  filtrarLanc();
+  renderHistImport();
+  atualizarDashboard();
 });
 </script>
 </body>
