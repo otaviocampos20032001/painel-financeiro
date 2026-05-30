@@ -808,18 +808,21 @@ function detectarBanco(texto, nome){
 }
 
 function parsearNubank(texto){
-  // Nubank CSV: date,title,amount  OU  Data,Descrição,Valor
+  // Nubank CSV: Data,Valor,Identificador,Descrição
   const linhas = texto.trim().split('\n');
-  const sep = linhas[0].includes(';') ? ';' : ',';
   const resultado = [];
   for(let i = 1; i < linhas.length; i++){
-    const cols = linhas[i].split(sep).map(c => c.trim().replace(/^"|"$/g,''));
-    if(cols.length < 3) continue;
-    let [data, desc, valor] = cols;
-    if(!data || !desc || !valor) continue;
-    valor = parseFloat(valor.replace(',','.'));
+    const linha = linhas[i].trim();
+    if(!linha) continue;
+    // split por vírgula respeitando campos com aspas
+    const cols = linha.match(/(".*?"|[^,]+)(?=,|$)/g);
+    if(!cols || cols.length < 4) continue;
+    const data  = cols[0].trim().replace(/^"|"$/g,'');
+    const valorRaw = cols[1].trim().replace(/^"|"$/g,'');
+    const desc  = cols[3].trim().replace(/^"|"$/g,'');
+    if(!data || !valorRaw || !desc) continue;
+    const valor = parseFloat(valorRaw);
     if(isNaN(valor)) continue;
-    // Nubank: negativo = saída, positivo = entrada
     const tipo = valor < 0 ? 'saida' : 'entrada';
     const dataFmt = formatarData(data);
     const mes = extrairMes(data);
