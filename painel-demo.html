@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Painel Financeiro — Demo</title>
+<title>Painel Financeiro — Otavio</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -290,46 +290,45 @@ tbody tr:hover td{background:#f9fafb;}
 
 <!-- ── IMPORTAR ── -->
 <div class="page" id="page-importar">
-  <div class="ph"><div><h2>Importar</h2><p>Importe extratos bancários em CSV ou OFX</p></div></div>
+  <div class="ph"><div><h2>Importar Extrato</h2><p>Importe extratos CSV do Nubank ou Bradesco</p></div></div>
   <div class="g2">
     <div class="card">
-      <h3>Selecione o arquivo</h3>
-      <input type="file" id="file-input" accept=".csv,.ofx,.xlsx" style="display:none;" onchange="onFileSelected(this)">
-      <div class="upload-area" onclick="document.getElementById('file-input').click()">
+      <h3>Selecione o arquivo CSV</h3>
+      <input type="file" id="file-input" accept=".csv" style="display:none;" onchange="onFileSelected(this)">
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='#6366f1'" ondragleave="this.style.borderColor=''"
+        ondrop="event.preventDefault();this.style.borderColor='';onFileSelected({files:event.dataTransfer.files})">
         <div class="upload-icon">📂</div>
-        <h4 id="upload-label">Clique para selecionar ou arraste aqui</h4>
-        <p>Formatos aceitos: .csv, .ofx, .xlsx</p>
-        <p style="margin-top:6px;font-size:11px;color:#d1d5db;">Tamanho máximo: 10 MB</p>
+        <h4 id="upload-label">Clique ou arraste o arquivo CSV aqui</h4>
+        <p>Formatos aceitos: Nubank CSV, Bradesco CSV</p>
       </div>
-      <div id="import-progress" style="display:none;">
+      <div id="import-preview" style="display:none;margin-top:16px;">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:13px;color:#065f46;" id="import-info"></div>
+        <div style="margin-top:12px;overflow-x:auto;max-height:200px;overflow-y:auto;">
+          <table style="width:100%;font-size:12px;border-collapse:collapse;" id="preview-table"></table>
+        </div>
+      </div>
+      <div id="import-progress" style="display:none;margin-top:12px;">
         <div class="import-bar"><div class="import-fill" id="import-fill"></div></div>
-        <p id="import-status" style="font-size:12px;color:#6b7280;text-align:center;"></p>
+        <p id="import-status" style="font-size:12px;color:#6b7280;text-align:center;margin-top:6px;"></p>
       </div>
       <div style="margin-top:16px;display:flex;gap:10px;">
-        <select id="import-conta" style="flex:1;">
-          <option>Conta Corrente — Nubank</option>
-          <option>Conta Corrente — Itaú</option>
-          <option>Cartão Amex</option>
-          <option>Cartão Elo</option>
+        <select id="import-banco" style="flex:1;">
+          <option value="auto">Detectar banco automaticamente</option>
+          <option value="nubank">Nubank</option>
+          <option value="bradesco">Bradesco</option>
         </select>
-        <button class="btn bp" onclick="simularImport()">Importar</button>
+        <button class="btn bp" onclick="processarImport()">Importar</button>
       </div>
     </div>
     <div class="card">
       <h3>Histórico de importações</h3>
-      <div class="tw"><table id="tbl-import-hist">
-        <thead><tr><th>Data</th><th>Arquivo</th><th>Conta</th><th>Registros</th><th>Status</th></tr></thead>
-        <tbody id="tbody-import">
-          <tr><td>10/04/2026</td><td>extrato-abr.csv</td><td>Nubank</td><td>34</td><td><span class="badge verde">✓ Importado</span></td></tr>
-          <tr><td>08/03/2026</td><td>extrato-mar.csv</td><td>Nubank</td><td>29</td><td><span class="badge verde">✓ Importado</span></td></tr>
-          <tr><td>05/03/2026</td><td>fatura-amex-mar.ofx</td><td>Amex</td><td>18</td><td><span class="badge verde">✓ Importado</span></td></tr>
-          <tr><td>07/02/2026</td><td>extrato-fev.csv</td><td>Nubank</td><td>26</td><td><span class="badge verde">✓ Importado</span></td></tr>
-          <tr><td>03/01/2026</td><td>extrato-jan.csv</td><td>Itaú</td><td>31</td><td><span class="badge amarelo">⚠ Parcial</span></td></tr>
-        </tbody>
+      <div class="tw"><table>
+        <thead><tr><th>Data</th><th>Arquivo</th><th>Banco</th><th>Registros</th><th>Status</th></tr></thead>
+        <tbody id="tbody-import"></tbody>
       </table></div>
     </div>
   </div>
-  <div class="demo-footer" style="margin-top:16px;">⚠ Dados fictícios — apenas para demonstração visual</div>
 </div>
 
 <!-- ── PENDENTES ── -->
@@ -505,8 +504,23 @@ const HIST=[{l:'Nov/25',e:0,s:0},{l:'Dez/25',e:0,s:0},{l:'Jan/26',e:0,s:0},{l:'F
 const MNOME={'2026-12':'Dezembro 2026','2026-11':'Novembro 2026','2026-10':'Outubro 2026','2026-09':'Setembro 2026','2026-08':'Agosto 2026','2026-07':'Julho 2026','2026-06':'Junho 2026','2026-05':'Maio 2026','2026-04':'Abril 2026','2026-03':'Março 2026','2026-02':'Fevereiro 2026','2026-01':'Janeiro 2026','2025-12':'Dezembro 2025','2025-11':'Novembro 2025'};
 const MANT={'2026-12':'2026-11','2026-11':'2026-10','2026-10':'2026-09','2026-09':'2026-08','2026-08':'2026-07','2026-07':'2026-06','2026-06':'2026-05','2026-05':'2026-04','2026-04':'2026-03','2026-03':'2026-02','2026-02':'2026-01','2026-01':'2025-12','2025-12':'2025-11','2025-11':null};
 
+// ══════════════════════════════════════════════
+// PERSISTÊNCIA — localStorage
+// ══════════════════════════════════════════════
+function salvarDados(){
+  localStorage.setItem('painel_lancs', JSON.stringify(LANCS));
+  localStorage.setItem('painel_nextid', nextId);
+}
+function carregarDados(){
+  const l = localStorage.getItem('painel_lancs');
+  const n = localStorage.getItem('painel_nextid');
+  if(l) LANCS = JSON.parse(l);
+  if(n) nextId = parseInt(n);
+}
+
 let LANCS = [];
-let nextId=1;
+let nextId = 1;
+carregarDados();
 
 const fmt=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 
@@ -712,7 +726,7 @@ function salvarNovoLanc(){
   LANCS.unshift({id:nextId++,tipo:document.getElementById('nl-tipo').value,desc,
     cat:document.getElementById('nl-cat').value,data:`${dd}/${m}/${y}`,
     mes:document.getElementById('nl-mes').value,valor});
-  fecharModal(); filtrarLanc(); toast('Lançamento adicionado!','sucesso');
+  salvarDados(); fecharModal(); filtrarLanc(); toast('Lançamento adicionado!','sucesso');
 }
 
 function editarLanc(id){
@@ -746,7 +760,7 @@ function salvarEdicaoLanc(id){
   l.desc=desc; l.valor=valor;
   l.cat=document.getElementById('el-cat').value;
   l.data=`${dd}/${m}/${y}`;
-  fecharModal(); filtrarLanc(); toast('Lançamento atualizado!','sucesso');
+  salvarDados(); fecharModal(); filtrarLanc(); toast('Lançamento atualizado!','sucesso');
 }
 
 function excluirLanc(id){
@@ -758,44 +772,158 @@ function excluirLanc(id){
 }
 function confirmarExclusao(id){
   LANCS=LANCS.filter(x=>x.id!==id);
-  fecharModal(); filtrarLanc(); toast('Lançamento excluído');
+  salvarDados(); fecharModal(); filtrarLanc(); toast('Lançamento excluído');
 }
 
 // ══════════════════════════════════════════════
-// IMPORTAR
+// IMPORTAR — LEITURA REAL DE CSV
 // ══════════════════════════════════════════════
+let csvArquivo = null;
+let csvLinhas = [];
+
 function onFileSelected(input){
-  if(input.files&&input.files[0]){
-    document.getElementById('upload-label').textContent='📄 '+input.files[0].name;
-  }
+  const file = input.files && input.files[0];
+  if(!file) return;
+  csvArquivo = file;
+  document.getElementById('upload-label').textContent = '📄 ' + file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const texto = e.target.result;
+    const banco = detectarBanco(texto, file.name);
+    if(banco === 'nubank') csvLinhas = parsearNubank(texto);
+    else if(banco === 'bradesco') csvLinhas = parsearBradesco(texto);
+    else { toast('Formato não reconhecido. Selecione Nubank ou Bradesco.','erro'); return; }
+    document.getElementById('import-banco').value = banco;
+    mostrarPreview(banco, csvLinhas);
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
-function simularImport(){
-  const prog=document.getElementById('import-progress');
-  const fill=document.getElementById('import-fill');
-  const status=document.getElementById('import-status');
-  prog.style.display='block'; fill.style.width='0%';
-  status.textContent='Lendo arquivo...';
-  let p=0;
-  const iv=setInterval(()=>{
-    p+=Math.random()*18+5;
-    if(p>=100){p=100;clearInterval(iv);
-      status.textContent='✓ 34 registros importados com sucesso!';
-      const conta=document.getElementById('import-conta').value;
-      const hoje=new Date();
-      const d=`${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-      const arquivo=document.getElementById('file-input').files[0]?.name||'extrato.csv';
-      const tbody=document.getElementById('tbody-import');
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${d}</td><td>${arquivo}</td><td>${conta.split('—')[1]?.trim()||conta}</td><td>${Math.floor(Math.random()*20)+15}</td><td><span class="badge verde">✓ Importado</span></td>`;
-      tbody.insertBefore(tr,tbody.firstChild);
-      toast('Extrato importado com sucesso!','sucesso');
+function detectarBanco(texto, nome){
+  const t = texto.toLowerCase(); const n = nome.toLowerCase();
+  if(t.includes('nubank') || n.includes('nubank') || t.startsWith('date,title,amount')) return 'nubank';
+  if(t.includes('bradesco') || n.includes('bradesco') || t.includes('data;histórico') || t.includes('data;historico')) return 'bradesco';
+  const banco = document.getElementById('import-banco').value;
+  return banco !== 'auto' ? banco : null;
+}
+
+function parsearNubank(texto){
+  // Nubank CSV: date,title,amount  OU  Data,Descrição,Valor
+  const linhas = texto.trim().split('\n');
+  const sep = linhas[0].includes(';') ? ';' : ',';
+  const resultado = [];
+  for(let i = 1; i < linhas.length; i++){
+    const cols = linhas[i].split(sep).map(c => c.trim().replace(/^"|"$/g,''));
+    if(cols.length < 3) continue;
+    let [data, desc, valor] = cols;
+    if(!data || !desc || !valor) continue;
+    valor = parseFloat(valor.replace(',','.'));
+    if(isNaN(valor)) continue;
+    // Nubank: negativo = saída, positivo = entrada
+    const tipo = valor < 0 ? 'saida' : 'entrada';
+    const dataFmt = formatarData(data);
+    const mes = extrairMes(data);
+    resultado.push({tipo, desc, valor: Math.abs(valor), data: dataFmt, mes, cat: sugerirCategoria(desc), origem:'Nubank'});
+  }
+  return resultado;
+}
+
+function parsearBradesco(texto){
+  // Bradesco CSV: Data;Histórico;Docto.;Crédito (R$);Débito (R$);Saldo (R$)
+  const linhas = texto.trim().split('\n');
+  const sep = linhas[0].includes(';') ? ';' : ',';
+  const resultado = [];
+  let headerFound = false;
+  for(let i = 0; i < linhas.length; i++){
+    const l = linhas[i].toLowerCase();
+    if(l.includes('data') && (l.includes('hist') || l.includes('crédito') || l.includes('credito'))){
+      headerFound = true; continue;
     }
-    fill.style.width=p+'%';
-    if(p<40)status.textContent='Lendo arquivo...';
-    else if(p<70)status.textContent='Processando transações...';
-    else if(p<100)status.textContent='Categorizando lançamentos...';
-  },120);
+    if(!headerFound) continue;
+    const cols = linhas[i].split(sep).map(c => c.trim().replace(/^"|"$/g,''));
+    if(cols.length < 4) continue;
+    const [data, desc, , credRaw, debRaw] = cols;
+    if(!data || !desc) continue;
+    const cred = parseFloat((credRaw||'0').replace(/\./g,'').replace(',','.')) || 0;
+    const deb  = parseFloat((debRaw||'0').replace(/\./g,'').replace(',','.')) || 0;
+    if(cred === 0 && deb === 0) continue;
+    const tipo = cred > 0 ? 'entrada' : 'saida';
+    const valor = cred > 0 ? cred : deb;
+    const dataFmt = formatarData(data);
+    const mes = extrairMes(data);
+    resultado.push({tipo, desc, valor, data: dataFmt, mes, cat: sugerirCategoria(desc), origem:'Bradesco'});
+  }
+  return resultado;
+}
+
+function formatarData(d){
+  // suporta yyyy-mm-dd ou dd/mm/yyyy
+  if(!d) return '';
+  if(d.includes('-')){ const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
+  return d;
+}
+
+function extrairMes(d){
+  if(!d) return '2026-05';
+  if(d.includes('-')){ return d.slice(0,7); }
+  if(d.includes('/')){ const p=d.split('/'); return `${p[2]}-${p[1].padStart(2,'0')}`; }
+  return '2026-05';
+}
+
+function sugerirCategoria(desc){
+  const d = desc.toLowerCase();
+  if(d.includes('salário')||d.includes('salario')||d.includes('mensalidade')) return 'Mensalidade Presencial';
+  if(d.includes('consultoria')) return 'Pagamento de Consultoria';
+  if(d.includes('imposto')||d.includes('das')||d.includes('darf')||d.includes('irpf')) return 'Imposto';
+  if(d.includes('google')||d.includes('meta')||d.includes('facebook')||d.includes('ads')) return 'Anúncios';
+  if(d.includes('curso')||d.includes('mentoria')||d.includes('treinamento')) return 'Cursos e Mentorias';
+  if(d.includes('câmera')||d.includes('camera')||d.includes('audio')||d.includes('microfone')) return 'Equipamento Audiovisual';
+  if(d.includes('software')||d.includes('assinatura')||d.includes('ferramenta')) return 'Ferramentas Digitais';
+  if(d.includes('equipe')||d.includes('funcionário')||d.includes('funcionario')||d.includes('colaborador')) return 'Custo de Equipe';
+  return 'Outros';
+}
+
+function mostrarPreview(banco, linhas){
+  const info = document.getElementById('import-info');
+  const preview = document.getElementById('import-preview');
+  const tbl = document.getElementById('preview-table');
+  info.textContent = `✓ Banco detectado: ${banco.charAt(0).toUpperCase()+banco.slice(1)} — ${linhas.length} lançamentos encontrados`;
+  const amostra = linhas.slice(0,5);
+  tbl.innerHTML = `<tr style="background:#f9fafb;"><th style="padding:6px 8px;text-align:left;font-size:11px;">Data</th><th style="padding:6px 8px;text-align:left;font-size:11px;">Descrição</th><th style="padding:6px 8px;text-align:left;font-size:11px;">Tipo</th><th style="padding:6px 8px;text-align:right;font-size:11px;">Valor</th></tr>`
+    + amostra.map(l=>`<tr><td style="padding:5px 8px;font-size:12px;">${l.data}</td><td style="padding:5px 8px;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.desc}</td><td style="padding:5px 8px;font-size:12px;"><span class="badge ${l.tipo}">${l.tipo==='entrada'?'Entrada':'Saída'}</span></td><td style="padding:5px 8px;font-size:12px;text-align:right;" class="${l.tipo==='entrada'?'ve':'vs'}">${fmt(l.valor)}</td></tr>`).join('');
+  preview.style.display = 'block';
+}
+
+function processarImport(){
+  if(!csvArquivo){ toast('Selecione um arquivo CSV primeiro','erro'); return; }
+  if(csvLinhas.length === 0){ toast('Nenhum lançamento encontrado no arquivo','erro'); return; }
+  const prog = document.getElementById('import-progress');
+  const fill = document.getElementById('import-fill');
+  const status = document.getElementById('import-status');
+  prog.style.display = 'block'; fill.style.width = '0%';
+  status.textContent = 'Importando lançamentos...';
+  let adicionados = 0;
+  csvLinhas.forEach(l => {
+    const jaExiste = LANCS.some(x => x.data===l.data && x.desc===l.desc && x.valor===l.valor);
+    if(!jaExiste){ LANCS.unshift({id:nextId++, ...l}); adicionados++; }
+  });
+  fill.style.width = '100%';
+  status.textContent = `✓ ${adicionados} lançamentos importados (${csvLinhas.length - adicionados} duplicatas ignoradas)`;
+  salvarDados();
+  // registrar no histórico
+  const hoje = new Date();
+  const d = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+  const tbody = document.getElementById('tbody-import');
+  const tr = document.createElement('tr');
+  const banco = document.getElementById('import-banco').value;
+  tr.innerHTML = `<td>${d}</td><td>${csvArquivo.name}</td><td>${banco.charAt(0).toUpperCase()+banco.slice(1)}</td><td>${adicionados}</td><td><span class="badge verde">✓ Importado</span></td>`;
+  tbody.insertBefore(tr, tbody.firstChild);
+  filtrarLanc();
+  toast(`${adicionados} lançamentos importados com sucesso!`, 'sucesso');
+  csvArquivo = null; csvLinhas = [];
+  document.getElementById('upload-label').textContent = 'Clique ou arraste o arquivo CSV aqui';
+  document.getElementById('import-preview').style.display = 'none';
+  setTimeout(()=>{ prog.style.display='none'; }, 3000);
 }
 
 // ══════════════════════════════════════════════
